@@ -218,6 +218,13 @@ nav.steps button.active .prog{color:#fff;opacity:.85}
 .pill.gray{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
 .pill.green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
 #modepill{font-weight:600}
+#whopill{font-weight:600;cursor:pointer}
+.progtab{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+.progtab th{text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border);padding:4px 6px;font-size:12.5px}
+.progtab td{padding:6px;border-bottom:1px solid var(--border);vertical-align:top}
+code.code{font-family:var(--mono);font-size:12px;background:var(--surface2);padding:2px 6px;border-radius:4px;word-break:break-all}
+#cloudstatus{display:block;margin-top:4px}
+@media (max-width:640px){.progtab{font-size:12px}.progtab td,.progtab th{padding:4px 3px}}
 @media (max-width:640px){.jl{grid-template-columns:50px 1fr}.jl .crl{grid-column:2}}
 </style>
 </head>
@@ -229,6 +236,7 @@ nav.steps button.active .prog{color:#fff;opacity:.85}
       <label class="small muted" for="scenario">Company</label>
       <select id="scenario" aria-label="Choose a company"></select>
       <span class="pill gold" id="modepill"></span>
+      <span class="pill gray" id="whopill" title="Switch who is working" onclick="switchUser()"></span>
     </div>
   </header>
   <nav class="steps" id="steps" aria-label="Steps"></nav>
@@ -253,12 +261,12 @@ nav.steps button.active .prog{color:#fff;opacity:.85}
       </div>
     </div>
   </details>
-  <footer id="foot"></footer>
+  <footer><span id="foot"></span><span id="cloudstatus" class="small"></span></footer>
 </div>
 
 <script>
 'use strict';
-const VERSION = '0.3.0';
+const VERSION = '0.4.0';
 const STORE_KEY = 'cycle-lab-v2';
 
 // ───────────────────────────── Accounts ─────────────────────────────
@@ -644,10 +652,11 @@ function checkEntryUI(eid){
   r.attempts++;
   if (res.ok){ r.status='correct'; r.firstTry = r.attempts===1 && !r.hintBefore; r.last={ok:true,msg:(r.attempts===1?'Correct on the first try.':'Correct on try '+r.attempts+'.')}; }
   else r.last={ok:false,msg:res.msg};
+  logEvent('entry', eid, res.ok?'correct':'wrong', {attempts:r.attempts, hint:r.hint, firstTry:!!r.firstTry});
   render(); save();
   setTimeout(()=>{ const el=document.getElementById('fb-'+eid); if (el) el.scrollIntoView({block:'nearest'}); }, 30);
 }
-function showAnswer(eid){ const r=rec(eid); if (!answerAvailable(r)) return; r.status='shown'; r.last={ok:true,msg:'Shown after '+r.attempts+(r.attempts===1?' try.':' tries.')}; render(); save(); }
+function showAnswer(eid){ const r=rec(eid); if (!answerAvailable(r)) return; r.status='shown'; r.last={ok:true,msg:'Shown after '+r.attempts+(r.attempts===1?' try.':' tries.')}; logEvent('entry', eid, 'shown', {attempts:r.attempts, hint:r.hint}); render(); save(); }
 function openHint(eid, level){ const r=rec(eid); if (level>hintLevelAvailable(r)) return; r.hint = (r.hint===level?0:level); if (!r.status && r.hint>0 && r.attempts===0) r.hintBefore=true; render(); save(); }
 function toggleLands(eid){ const r=rec(eid); r.lands=!r.lands; render(); save(); }
 
@@ -703,6 +712,127 @@ function jeTable(e){
     <tr><td class="d"></td><td class="cr-acct">${acctBtn(e.cr)}</td><td class="amt"></td><td class="amt">${fmt(e.amount)}</td></tr></table>`;
 }
 
+// ───────────────────────────── Class record: identity, events, summary, cloud ─────────────────────────────
+const BLOCKS = ['Block 1','Block 2','Block 3','Not in ACC 153'];
+// Same Firebase project as the Journal Entry Arena and Cash Flow Lab; collections here are prefixed cl_ so nothing collides.
+const FIREBASE = { apiKey: "AIzaSyBnBpSSxGoxSSdPU188AhxiUmzJgvxUurc", authDomain: "journal-entry-arena.firebaseapp.com", projectId: "journal-entry-arena", storageBucket: "journal-entry-arena.firebasestorage.app", messagingSenderId: "378585775864", appId: "1:378585775864:web:57f5af35107c6bef4c850d" };
+const SDK = '13.0.0';
+const STAGES = [['journal','Journal entries'],['post','Posting'],['ajes','Adjusting entries'],['balance','Balances'],['tb','Trial balance']];
+
+function identityOK(){ return !!(state.identity && state.identity.name); }
+function formatName(first, last){
+  const f = (first||'').trim().replace(/\s+/g,'-').replace(/[^A-Za-z\-']/g,''); const l = (last||'').trim().replace(/[^A-Za-z]/g,'').slice(0,1).toUpperCase();
+  if (!f || !l) return null; return f.charAt(0).toUpperCase()+f.slice(1)+' '+l+'.';
+}
+function signIn(){
+  const name = formatName($('#si-first').value, $('#si-last').value); const block = $('#si-block').value;
+  const err = $('#si-err');
+  if (!name) { err.textContent = 'Enter your first name and the first letter of your last name.'; return; }
+  if (!block) { err.textContent = 'Choose your block.'; return; }
+  state.identity = {name, block, since: Date.now()}; state.cloud = state.cloud || {sent:[]};
+  logEvent('signin', 'device', 'ok', {}); render(); save(); cloudSchedule(300);
+}
+function skipSignIn(){ state.identity = {skipped:true}; render(); save(); }
+function switchUser(){ state.identity = null; render(); save(); }
+
+// Every check, reveal and balance leaves one event: what was tried, how many tries it took, how much help was used.
+function logEvent(kind, item, result, extra){
+  state.events = state.events || [];
+  const n = state.events.length + 1;
+  const ev = Object.assign({id: n, at: Date.now(), company: state.scenario, mode: mode(), kind, item, result}, extra||{});
+  state.events.push(ev); if (state.events.length > 3000) state.events.splice(0, state.events.length - 3000);
+  cloudSchedule();
+}
+function summary(){
+  const out = {version: VERSION, companies:{}};
+  for (const s of allScenarios()){
+    const w = state.work[s.id]; if (!w) continue; const Rs = compute(s); const comp = {stages:{}};
+    const ent = kind => { const l = Rs.entries.filter(e=>e.kind===kind); const recs = l.map(e=>w.entries[e.id]||{}); 
+      return {total:l.length, done:recs.filter(r=>r.status).length, firstTry:recs.filter(r=>r.status==='correct'&&r.firstTry).length, shown:recs.filter(r=>r.status==='shown').length, hints:recs.filter(r=>r.hint>0||r.hintBefore).length, attempts:recs.reduce((a,r)=>a+(r.attempts||0),0)}; };
+    comp.stages.journal = ent('txn'); comp.stages.ajes = ent('adj');
+    const pa = Rs.active.filter(a=>Rs.ledger[a.name].some(p=>p.kind!=='adj')).map(a=>a.name);
+    comp.stages.post = {total: pa.length, done: pa.filter(a=>(w.postStatus['txn:'+a]||{}).ok).length};
+    const balRecs = Rs.active.map(a=>w.bal[a.name]||{});
+    comp.stages.balance = {total: Rs.active.length, done: balRecs.filter(b=>b.status).length, shown: balRecs.filter(b=>b.status==='shown').length, postOk: Rs.active.filter(a=>(w.postStatus['adj:'+a.name]||{}).ok).length};
+    comp.stages.tb = {total:1, done: (w.tbResult && w.tbResult.allOk && w.tbResult.tie) ? 1 : 0};
+    comp.mode = state.modes[s.id] || DEFAULT_MODE[s.id] || 'guided';
+    comp.complete = STAGES.every(([k])=>comp.stages[k].done===comp.stages[k].total && comp.stages[k].total>0);
+    out.companies[s.id] = comp;
+  }
+  return out;
+}
+// A short code the student can show or paste if the class record is not reachable. Decoded on the teacher page.
+function completionCode(){
+  const sm = summary(); const id = state.identity||{};
+  const flags = Object.entries(sm.companies).map(([cid,c])=>cid.slice(0,2)+':'+STAGES.map(([k])=>{ const st=c.stages[k]; return st.done===st.total&&st.total>0 ? (k==='journal'||k==='ajes' ? (st.shown? 'h':'y') : (k==='balance'&&st.shown? 'h':'y')) : (st.done? 'p':'-'); }).join('')).join(',');
+  const payload = `${id.name||''}|${id.block||''}|${flags}|${Math.floor(Date.now()/60000)}`;
+  let h=0; for (const ch of payload+'cycle-lab-salt-2026') h=(h*31+ch.charCodeAt(0))>>>0;
+  return btoa(unescape(encodeURIComponent(payload+'|'+h.toString(36)))).replace(/=+$/,'');
+}
+function progressPanel(){
+  const sm = summary(); const ids = allScenarios().filter(s=>sm.companies[s.id]);
+  if (!ids.length) return '';
+  const rows = ids.map(s=>{ const c=sm.companies[s.id];
+    const cells = STAGES.map(([k,lab])=>{ const st=c.stages[k]; const full = st.total>0 && st.done===st.total;
+      const cls = full ? ((st.shown||0)>1 ? 'gray' : 'green') : (st.done? 'gold':'gray');
+      const txt = full ? ((st.shown||0) ? `✓ (${st.shown} shown)` : '✓') : `${st.done}/${st.total}`;
+      return `<td><span class="pill ${cls}" title="${lab}">${txt}</span></td>`; }).join('');
+    return `<tr><td>${esc(s.id===CUSTOM_ID?'Build your own':s.name)}<br><span class="small muted">${MODE_LABEL[c.mode].split(' — ')[0]}</span></td>${cells}</tr>`; }).join('');
+  return `<div class="card"><h2>My progress</h2>
+    <table class="progtab"><tr><th>Company</th>${STAGES.map(([k,l])=>`<th>${l}</th>`).join('')}</tr>${rows}</table>
+    <p class="small muted" style="margin:8px 0 0">A green check means the stage is finished with at most one answer shown. "Shown" means you asked for the answer instead of solving it — it still counts as finished, but Mr. Sorensen can see the difference. Your work saves on this device${identityOK()?' and syncs to the class record':''}.</p>
+    ${identityOK()?`<p class="small muted" style="margin:6px 0 0">Completion code (if the class record is unreachable): <code class="code">${completionCode()}</code></p>`:''}</div>`;
+}
+function resumeCard(){
+  const w = state.work[state.scenario]; if (!w) return '';
+  const first = STEPS.slice(1).find(st=>{ const p=progress(st.id); return p && p[0]<p[1]; });
+  if (!first) return `<div class="goal">This company is finished. Pick the next one in the company list, or review everything.</div>`;
+  return `<div class="goal">Pick up where you left off: <button type="button" class="lnk think" onclick="setStep('${first.id}')">Step ${first.n}: ${first.label} →</button></div>`;
+}
+function signInCard(){
+  return `<div class="card" id="signin"><h2>Who is working?</h2>
+    <p>Mr. Sorensen uses this to see what you finished (and for the extra credit). Your work also saves on this device.</p>
+    <div class="form">
+      <label>First name<input type="text" id="si-first" autocomplete="given-name" maxlength="30"></label>
+      <label>Last initial<input type="text" id="si-last" maxlength="1" autocomplete="off"></label>
+      <label>Block<select id="si-block"><option value="">— choose —</option>${BLOCKS.map(b=>`<option>${b}</option>`).join('')}</select></label>
+      <div class="wide"><button type="button" class="btn" onclick="signIn()">Start</button> <button type="button" class="lnk" onclick="skipSignIn()">Just practice, no record</button><div class="err" id="si-err"></div></div>
+    </div>
+    <p class="small muted" style="margin-top:8px">Use the same name and block on every device and your work is combined. Nothing here is graded; the record only shows what you finished and how much help you used.</p></div>`;
+}
+
+// Cloud sync: append-only events plus a summary document. Works only when served over http(s) with the project rules in place; otherwise stays local.
+let cloud = null, cloudTimer = null, cloudBusy = false, cloudRetry = 2000;
+function cloudStatus(t){ const el=document.getElementById('cloudstatus'); if (el) el.textContent = t; }
+async function connectCloud(){
+  if (cloud) return cloud; if (location.protocol==='file:' ) return null;
+  try {
+    const base = `https://www.gstatic.com/firebasejs/${SDK}/`;
+    const [app, auth, fs] = await Promise.all([import(base+'firebase-app.js'), import(base+'firebase-auth.js'), import(base+'firebase-firestore.js')]);
+    const a = app.getApps().length ? app.getApp() : app.initializeApp(FIREBASE);
+    const au = auth.getAuth(a); const cred = au.currentUser ? {user:au.currentUser} : await auth.signInAnonymously(au);
+    cloud = {fs, db: fs.getFirestore(a), uid: cred.user.uid}; return cloud;
+  } catch(e){ return null; }
+}
+function cloudSchedule(delay){ if (!identityOK()) return; clearTimeout(cloudTimer); cloudTimer = setTimeout(cloudFlush, delay||1500); }
+async function cloudFlush(){
+  if (!identityOK()) return; if (cloudBusy){ cloudSchedule(1000); return; }
+  cloudBusy = true;
+  try {
+    const c = await connectCloud(); if (!c){ cloudStatus('Saved on this device · class record not reachable here'); return; }
+    const {fs, db, uid} = c; const id = state.identity; const now = Date.now();
+    await fs.setDoc(fs.doc(db,'cl_players',uid), {uid, name:id.name, block:id.block, updatedAt: now});
+    await fs.setDoc(fs.doc(db,'cl_progress',uid), {uid, name:id.name, block:id.block, updatedAt: now, summary: JSON.stringify(summary())});
+    state.cloud = state.cloud || {sent:[]}; const sent = new Set(state.cloud.sent);
+    const pending = (state.events||[]).filter(e=>!sent.has(e.id)).slice(0,40);
+    for (const e of pending){ const ref = fs.doc(db,'cl_events', uid+'_'+e.id); const ex = await fs.getDoc(ref); if (!ex.exists()) await fs.setDoc(ref, {uid, name:id.name, block:id.block, eventId:String(e.id), at:e.at, company:e.company, mode:e.mode, kind:e.kind, item:e.item, result:e.result, attempts:e.attempts||0, hint:e.hint||0, firstTry:!!e.firstTry}); sent.add(e.id); }
+    state.cloud.sent = [...sent].slice(-3000); save(); cloudRetry = 2000;
+    cloudStatus('Saved on this device · synced to the class record');
+    if ((state.events||[]).some(e=>!sent.has(e.id))) cloudSchedule(300);
+  } catch(e){ cloudStatus('Saved on this device · class sync will retry'); cloudTimer = setTimeout(cloudFlush, cloudRetry); cloudRetry = Math.min(cloudRetry*2, 60000); }
+  finally { cloudBusy = false; }
+}
+
 // ───────────────────────────── Rendering ─────────────────────────────
 function progress(stepId){
   const s=sc(); const w=W();
@@ -721,6 +851,8 @@ function render(){
   $('#scenario').innerHTML = allScenarios().map(x=>`<option value="${x.id}">${esc(x.id===CUSTOM_ID?'Build your own: '+x.name:x.name)}</option>`).join('');
   $('#scenario').value=s.id;
   $('#modepill').textContent = MODE_LABEL[mode()];
+  const who=$('#whopill'); if (identityOK()){ who.textContent = state.identity.name+' · '+state.identity.block+' · switch'; who.classList.remove('hidden'); } else who.classList.add('hidden');
+  if (!state.identity){ $('#steps').innerHTML=''; $('#main').innerHTML = signInCard(); $('#foot').textContent = `Sorensen's Cycle Lab v${VERSION} · Mr. Sorensen · ACC 153`; return; }
   const author = mode()==='author';
   $('#steps').innerHTML = STEPS.map(st=>{ const p = author?null:progress(st.id); const badge = p ? `<span class="prog ${p[0]===p[1]&&p[1]>0?'done':''}">${p[0]}/${p[1]}</span>` : '';
     return `<button type="button" class="${state.step===st.id?'active':''}" onclick="setStep('${st.id}')"><span class="n">${st.n}</span>${st.label}${badge}</button>`; }).join('')
@@ -770,7 +902,7 @@ function renderSetup(s){
     <p class="small muted" style="margin:8px 0 0">Every account name is a link to its T-account. Once an entry is checked, it can jump to its postings and back. The reference strip at the bottom has the rules.</p></div>`;
   const builder = s.custom ? renderBuilder(s) : '';
   const resetBtn = s.custom ? '' : `<p class="small muted" style="margin-top:10px"><button type="button" class="lnk danger" onclick="if(confirm('Clear all your work on this company?')){resetWork(state.scenario);render();save();}">Clear my work on this company</button></p>`;
-  return intro('setup') + (s.id==='gilda' ? passes : '') + `
+  return intro('setup', mode()==='author'?'':resumeCard()) + (s.id==='gilda' ? passes : '') + progressPanel() + `
   <div class="card"><h2>${esc(s.name)}</h2><p>${s.intro}</p>${modeSelector(s)}
     <h3>How this problem works — the same five parts as the test</h3>
     <div class="overview"><ol>
@@ -853,6 +985,7 @@ function checkPostings(acct, phase){
   }
   const ok = !missing.length && !wrongSide.length && !extra.length && !pending;
   w.postStatus[phase+':'+acct] = {ok, msg:parts.join(' ')};
+  logEvent('post', phase+':'+acct, ok?'ok':'issues', {missing:missing.length, wrongSide:wrongSide.length, extra:extra.length});
   if (ok) { w.post[acct] = (w.post[acct]||[]).filter(p=>kindOf(p.eid)!==phase).concat(expected.map(p=>({eid:p.eid, side:p.side}))); }
   render(); save();
 }
@@ -933,7 +1066,8 @@ function checkBalance(a, silent){
   b.attempts++;
   const amtOK = amt===Math.round(Math.abs(bal)), sideOK = b.side===side;
   if (amtOK && sideOK){ b.status='correct'; b.last={ok:true,msg:b.attempts===1?'Correct on the first try.':'Correct on try '+b.attempts+'.'}; }
-  else {
+  logEvent('balance', a, amtOK&&sideOK?'correct':'wrong', {attempts:b.attempts});
+  if (!(amtOK && sideOK)) {
     const parts=[];
     if (unposted) parts.push('Post and check this account\'s adjusting entries first — the balance includes them.');
     if (!amtOK){
@@ -948,7 +1082,7 @@ function checkBalance(a, silent){
   if (!silent){ render(); save(); }
 }
 function checkAllBalances(){ R.active.forEach(a=>checkBalance(a.name, true)); render(); save(); }
-function showBalance(a){ const b=W().bal[a]; if (!b || b.attempts<2) return; b.status='shown'; render(); save(); }
+function showBalance(a){ const b=W().bal[a]; if (!b || b.attempts<2) return; b.status='shown'; logEvent('balance', a, 'shown', {attempts:b.attempts}); render(); save(); }
 
 // ---- Step 6: trial balance, columns chosen, amounts carried forward ----
 function renderTBAttempt(s){
@@ -983,7 +1117,7 @@ function checkTB(){
   if (missing) msg = `${missing} ${missing===1?'account has':'accounts have'} no balance yet — finish Step 5 first.`;
   else if (!allOk) msg = 'Some rows are in the wrong column. Assets and expenses end with debit balances; liabilities, equity and revenue end with credit balances.';
   else if (!tie) msg = `Every column choice is right, but the totals differ: debits ${fmt(debit)}, credits ${fmt(credit)}. The usual suspects, in order: a balance that left out its beginning amount, an adjustment posted to the wrong side, and the supplies math. Go back to Step 5 and re-check the accounts that were "shown" rather than solved.`;
-  w.tbResult={rows, debit, credit, tie, allOk, msg}; render(); save();
+  w.tbResult={rows, debit, credit, tie, allOk, msg}; logEvent('tb', 'tb', allOk&&tie?'tie':'notie', {debit, credit}); render(); save();
 }
 
 // ---- Solution views (author mode and review) ----
@@ -1191,8 +1325,9 @@ function addEvent(kind){
   if (state.scenario!==CUSTOM_ID && state.modes[state.scenario]==='author') delete state.modes[state.scenario];
   const sel=$('#scenario'); sel.addEventListener('change', e=>setScenario(e.target.value));
   R=compute(sc()); render();
+  if (identityOK()) cloudSchedule(800);
 })();
-window.__cycle = {SCENARIOS, compute, state: () => state, STEPS, T, cueMarkup, equationEffect, genText, allScenarios, checkEntry, amountOptions, balanceCandidates, W: () => W()};
+window.__cycle = {SCENARIOS, compute, state: () => state, STEPS, T, cueMarkup, equationEffect, genText, allScenarios, checkEntry, amountOptions, balanceCandidates, W: () => W(), summary, completionCode};
 </script>
 </body>
 </html>

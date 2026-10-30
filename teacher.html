@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cycle Lab — teacher</title>
+<style>
+:root{color-scheme:light;--bg:#f5f4f0;--surface:#fff;--surface2:#f0efe9;--border:#dddbd3;--border2:#c8c6bc;--text:#1a1917;--text2:#5f5d55;--text3:#9a9890;--navy:#1b2a4a;--navy-bg:#e9edf5;--gold:#b8860b;--gold-bg:#fbf4e3;--gold-border:#ecd79a;--green:#1a6b3c;--green-bg:#e9f4ee;--green-border:#b3d9c1;--red:#b83232;--red-bg:#faeaea;--radius:10px;--radius-sm:6px;--sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#15171c;--surface:#1e2127;--surface2:#262a32;--border:#363b45;--border2:#4a505c;--text:#ecebe6;--text2:#b2b0a8;--text3:#7d7b74;--navy:#c7d3ee;--navy-bg:#232c40;--gold:#e0b347;--gold-bg:#2d2715;--gold-border:#5e4d1e;--green:#7fcf9c;--green-bg:#17301f;--green-border:#2c5a3a;--red:#f08b8b;--red-bg:#3a1f1f}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#15171c;--surface:#1e2127;--surface2:#262a32;--border:#363b45;--border2:#4a505c;--text:#ecebe6;--text2:#b2b0a8;--text3:#7d7b74;--navy:#c7d3ee;--navy-bg:#232c40;--gold:#e0b347;--gold-bg:#2d2715;--gold-border:#5e4d1e;--green:#7fcf9c;--green-bg:#17301f;--green-border:#2c5a3a;--red:#f08b8b;--red-bg:#3a1f1f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--sans)}
+.wrap{max-width:1100px;margin:0 auto;padding:16px 16px 60px}
+h1{font-size:21px;margin:0;color:var(--navy)}h1 small{display:block;font-size:13px;font-weight:400;color:var(--text2)}
+.top{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+select,input,button{font:inherit}select,input{border:1px solid var(--border2);background:var(--surface);color:var(--text);border-radius:var(--radius-sm);padding:6px 9px;font-size:14px}
+.btn{border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:var(--radius-sm);padding:7px 13px;font-size:14px;font-weight:600;cursor:pointer}.btn.ghost{background:var(--surface);color:var(--navy)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px}
+.card h2{font-size:17px;margin:0 0 4px;color:var(--navy)}.muted{color:var(--text2)}.small{font-size:13px}
+nav.q{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}nav.q button{border:1px solid var(--border);background:var(--surface);color:var(--text2);border-radius:999px;padding:7px 14px;font-size:14px;cursor:pointer}nav.q button.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}th{text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border);padding:6px 6px;font-size:12.5px;white-space:nowrap}td{padding:6px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:hover td{background:var(--surface2)}
+.pill{display:inline-block;padding:1px 7px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}.pill.green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}.pill.gold{background:var(--gold-bg);color:var(--gold);border:1px solid var(--gold-border)}.pill.gray{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}.pill.red{background:var(--red-bg);color:var(--red);border:1px solid var(--red)}
+.stage{display:inline-block;min-width:34px;text-align:center}
+.note{background:var(--navy-bg);border-radius:var(--radius-sm);padding:8px 12px;font-size:13.5px;margin:8px 0}
+.err{background:var(--red-bg);border:1px solid var(--red);border-radius:var(--radius-sm);padding:8px 12px;font-size:13.5px}
+code{font-family:var(--mono);font-size:12.5px;background:var(--surface2);padding:2px 6px;border-radius:4px;word-break:break-all}
+.say{color:var(--text2);font-size:13px}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12.5px;color:var(--text2);margin-top:6px}
+@media (max-width:700px){.wrap{padding:12px 10px 60px}table{font-size:12.5px}td,th{padding:4px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Cycle Lab — teacher <small>Three questions: who has done what, where the class is stuck, who to talk to</small></h1>
+    <div class="bar">
+      <label class="small muted">Block <select id="block"><option value="">all</option></select></label>
+      <label class="small muted">Credit allows <select id="shownLimit"><option value="0">0 shown</option><option value="1" selected>1 shown</option><option value="2">2 shown</option></select> per stage</label>
+      <button class="btn ghost" id="refresh" type="button">Refresh</button>
+      <button class="btn ghost" id="csv" type="button">Export CSV</button>
+    </div>
+  </div>
+  <div id="gate"></div>
+  <nav class="q" id="tabs"></nav>
+  <main id="main"></main>
+  <div class="card"><h2>Check a completion code</h2><p class="small muted">If a student shows you a code from their Setup page (used when the class record wasn't reachable), paste it here.</p>
+    <div class="bar"><input id="code" type="text" placeholder="paste the code" style="flex:1;min-width:240px"><button class="btn ghost" type="button" id="decode">Decode</button></div><div id="decoded" class="small" style="margin-top:6px"></div></div>
+  <p class="small muted" id="foot"></p>
+</div>
+<script>
+'use strict';
+const VERSION='0.4.0';
+const TEACHER_CODE='CYCLE-2026';
+const FIREBASE = { apiKey: "AIzaSyBnBpSSxGoxSSdPU188AhxiUmzJgvxUurc", authDomain: "journal-entry-arena.firebaseapp.com", projectId: "journal-entry-arena", storageBucket: "journal-entry-arena.firebasestorage.app", messagingSenderId: "378585775864", appId: "1:378585775864:web:57f5af35107c6bef4c850d" };
+const SDK='13.0.0';
+const STAGES=[['journal','Journal'],['post','Post'],['ajes','Adjust'],['balance','Balance'],['tb','Trial bal.']];
+const COMPANIES=[['gilda',"Gilda's (guided)"],['penny',"Penny's (on your own)"],['mine','Own company']];
+const ITEM_LABELS = {
+  gilda:{T1:'repaired for cash',T2:'bought a machine',T3:'prepaid 3 months rent',T4:'cash upfront, work not done',T5:'repairs on account',T6:'collected on account',T7:'paid wages earned',T8:'advertising on account',A1:'depreciation',A2:'work done, not billed',A3:'supplies used',A4:'advance now earned',A5:'wages owed',A6:'one month of rent'},
+  penny:{T1:'groomed for cash',T2:'bought equipment',T3:'prepaid 6 months insurance',T4:'supplies on account',T5:'cash upfront, work later',T6:'grooming on account',T7:'paid a bill owed',T8:'collected on account',T9:'paid wages earned',T10:'advertising on account',A1:'depreciation',A2:'one month of insurance',A3:'supplies used (with purchases)',A4:'advance partly earned',A5:'wages owed',A6:'work done, not billed',A7:'utilities used, bill later'}};
+const TRAP = {T3:'recording one month instead of the whole prepayment, or calling it an expense',T4:'calling an advance revenue — the work is not done',T6:'recording revenue again on a collection',T7:'treating wages paid this month as a payable',T8:'using Cash for a bill not yet paid',A1:'dividing by 12 instead of the life, or crediting Equipment',A2:'skipping it because nothing was billed',A3:'using what is on hand instead of what was used',A4:'moving the whole advance when only part is earned',A5:'using Cash for unpaid wages',A6:'using the whole prepayment instead of one month'};
+const $=s=>document.querySelector(s); const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+let tab='who', progress=[], events=[], uid='', demo=new URLSearchParams(location.search).get('demo')==='1';
+
+// ---- gate: light passcode, then Firebase teacher check ----
+function gateOK(){ try { return sessionStorage.getItem('cl_teacher_ok')==='1'; } catch(e){ return false; } }
+function askCode(){ $('#gate').innerHTML=`<div class="card"><h2>Teacher passcode</h2><div class="bar"><input id="pc" type="password" placeholder="passcode"><button class="btn" type="button" id="pcbtn">Open</button></div></div>`;
+  $('#pcbtn').onclick=()=>{ if($('#pc').value.trim()===TEACHER_CODE){ try{sessionStorage.setItem('cl_teacher_ok','1');}catch(e){} boot(); } else $('#pc').value=''; }; }
+async function connect(){
+  if (demo) return {demo:true};
+  const base=`https://www.gstatic.com/firebasejs/${SDK}/`;
+  const [app,auth,fs]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]);
+  const a=app.getApps().length?app.getApp():app.initializeApp(FIREBASE); const au=auth.getAuth(a); const cred=au.currentUser?{user:au.currentUser}:await auth.signInAnonymously(au);
+  uid=cred.user.uid; const db=fs.getFirestore(a);
+  const me=await fs.getDoc(fs.doc(db,'cl_teachers',uid)).catch(()=>null);
+  const authorized = me && me.exists();
+  return {fs, db, authorized};
+}
+async function loadData(c){
+  if (c.demo){ ({progress, events} = demoData()); return; }
+  const {fs, db} = c;
+  const ps = await fs.getDocs(fs.collection(db,'cl_progress')); progress = ps.docs.map(d=>d.data());
+  const es = await fs.getDocs(fs.query(fs.collection(db,'cl_events'), fs.orderBy('at','desc'), fs.limit(4000))); events = es.docs.map(d=>d.data());
+}
+// ---- merge devices: the same name + block is one student ----
+function students(){
+  const key = p => (p.name||'').trim().toLowerCase()+'|'+(p.block||'');
+  const map = {};
+  for (const p of progress){ let sm; try { sm = JSON.parse(p.summary||'{}'); } catch(e){ sm={companies:{}}; }
+    const st = map[key(p)] ||= {name:p.name, block:p.block, uids:new Set(), companies:{}, last:0};
+    st.uids.add(p.uid); st.last=Math.max(st.last, p.updatedAt||0);
+    for (const [cid,c] of Object.entries(sm.companies||{})){ const mine = st.companies[cid] ||= {stages:{}, mode:c.mode};
+      for (const [k,v] of Object.entries(c.stages||{})){ const cur = mine.stages[k]; if (!cur || (v.done||0) > (cur.done||0)) mine.stages[k] = {...v}; } } }
+  const evByKey = {};
+  for (const e of events){ const k=key(e); (evByKey[k] ||= []).push(e); }
+  for (const [k,st] of Object.entries(map)){ st.events = evByKey[k]||[]; st.last = Math.max(st.last, ...st.events.map(e=>e.at||0)); }
+  const blk = $('#block').value;
+  return Object.values(map).filter(s=>!blk || s.block===blk).sort((a,b)=>(a.block||'').localeCompare(b.block||'')||a.name.localeCompare(b.name));
+}
+function stageState(st, k){ if (!st) return null; const t=st.total||0, d=st.done||0; if (!t) return null; if (d<t) return {state:'partial', text:`${d}/${t}`}; const shown=st.shown||0; return {state: shown>+$('#shownLimit').value ? 'help' : 'full', text: shown?`✓ ${shown}sh`:'✓', shown}; }
+function creditStages(s){ let n=0; for (const cid of ['gilda','penny']){ const c=s.companies[cid]; if(!c) continue; for (const [k] of STAGES){ const ss=stageState(c.stages[k],k); if (ss && ss.state==='full') n++; } } return n; }
+const when = t => t ? new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'}) : '—';
+const daysAgo = t => t ? Math.floor((Date.now()-t)/86400000) : null;
+
+// ---- the three views ----
+function renderWho(){
+  const list=students();
+  const head = `<tr><th>Student</th><th>Block</th>${COMPANIES.map(([id,l])=>`<th>${l}</th>`).join('')}<th>Credit stages</th><th>Last active</th></tr>`;
+  const rows = list.map(s=>{
+    const cells = COMPANIES.map(([cid])=>{ const c=s.companies[cid]; if(!c) return '<td><span class="muted small">—</span></td>';
+      return '<td>'+STAGES.map(([k,l])=>{ const ss=stageState(c.stages[k],k); if(!ss) return `<span class="stage muted" title="${l}">·</span>`;
+        const cls = ss.state==='full'?'green':(ss.state==='help'?'gold':'gray'); return `<span class="stage pill ${cls}" title="${l}">${ss.text}</span>`; }).join(' ')+'</td>'; }).join('');
+    return `<tr><td>${esc(s.name)}${s.uids.size>1?` <span class="pill gray" title="${s.uids.size} devices merged">${s.uids.size} devices</span>`:''}</td><td>${esc(s.block||'')}</td>${cells}<td><b>${creditStages(s)}</b> of 10</td><td>${when(s.last)}</td></tr>`; }).join('');
+  return `<div class="card"><h2>Who has done what</h2>
+    <div class="note">A stage earns credit when it is finished with at most <b>${$('#shownLimit').value}</b> answer${$('#shownLimit').value==='1'?'':'s'} shown (Gilda's and Penny's count; the built company is practice). Green = earns credit · gold = finished but too many answers shown · gray = partly done.</div>
+    <table>${head}${rows||'<tr><td colspan="7" class="muted">No students yet.</td></tr>'}</table>
+    <div class="legend"><span>"3sh" = three answers shown in that stage.</span><span>Devices merge by name and block.</span><span>${list.length} students shown.</span></div></div>`;
+}
+function renderStuck(){
+  const list=students(); const evs=list.flatMap(s=>s.events);
+  const items={};
+  for (const e of evs){ if (e.kind!=='entry') continue; const k=e.company+'|'+e.item; const it=items[k] ||= {company:e.company,item:e.item,students:new Set(),wrong:0,correct:0,shown:0,firstTry:0,attempts:0};
+    it.students.add(e.name+'|'+e.block); if (e.result==='wrong') it.wrong++; if (e.result==='correct'){ it.correct++; it.attempts+=e.attempts||0; if (e.firstTry) it.firstTry++; } if (e.result==='shown') it.shown++; }
+  const rows = Object.values(items).filter(it=>it.company!=='mine' && (it.correct+it.shown)>0).map(it=>{ const solved=it.correct+it.shown; const ft=Math.round(100*it.firstTry/solved); return {...it, solved, ft, avg:(it.correct? (it.attempts/it.correct).toFixed(1):'—')}; }).sort((a,b)=>a.ft-b.ft);
+  const posts = {}; for (const e of evs){ if (e.kind!=='post') continue; const a=e.item.split(':')[1]; const p=posts[a] ||= {ok:0,issues:0}; if (e.result==='ok') p.ok++; else p.issues++; }
+  const postRows = Object.entries(posts).map(([a,p])=>({a, rate: p.ok+p.issues? Math.round(100*p.ok/(p.ok+p.issues)):0, n:p.ok+p.issues})).sort((x,y)=>x.rate-y.rate).slice(0,6);
+  const bals = {}; for (const e of evs){ if (e.kind!=='balance') continue; const b=bals[e.item] ||= {c:0,w:0,s:0}; if (e.result==='correct') b.c++; else if (e.result==='wrong') b.w++; else b.s++; }
+  const balRows = Object.entries(bals).map(([a,b])=>({a, rate: b.c+b.w? Math.round(100*b.c/(b.c+b.w)):0, n:b.c+b.w+b.s, s:b.s})).sort((x,y)=>x.rate-y.rate).slice(0,6);
+  return `<div class="card"><h2>Where the class is stuck</h2>
+    <p class="small muted">Entries ranked by first-try rate (lowest first). "Shown" counts students who asked for the answer. The trap column is the mistake that item usually catches — a good opener for the next class.</p>
+    <table><tr><th>Company</th><th>Item</th><th>Students</th><th>First try</th><th>Avg checks</th><th>Shown</th><th>Usual trap</th></tr>
+    ${rows.map(it=>`<tr><td>${esc(COMPANIES.find(c=>c[0]===it.company)?.[1]||it.company)}</td><td>${esc((ITEM_LABELS[it.company]||{})[it.item]||it.item)}</td><td>${it.students.size}</td><td><span class="pill ${it.ft>=70?'green':(it.ft>=40?'gold':'red')}">${it.ft}%</span></td><td>${it.avg}</td><td>${it.shown}</td><td class="say">${esc(TRAP[it.item]||'')}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">No entry checks yet.</td></tr>'}</table>
+    <h2 style="margin-top:14px">Posting and balances</h2>
+    <div class="bar" style="align-items:flex-start;gap:24px">
+      <div style="flex:1;min-width:260px"><div class="small muted">Accounts most often posted wrong on the first check</div><table>${postRows.map(r=>`<tr><td>${esc(r.a)}</td><td><span class="pill ${r.rate>=70?'green':(r.rate>=40?'gold':'red')}">${r.rate}% right</span></td><td class="muted">${r.n} checks</td></tr>`).join('')||'<tr><td class="muted">No posting checks yet.</td></tr>'}</table></div>
+      <div style="flex:1;min-width:260px"><div class="small muted">Balances most often wrong on the first check</div><table>${balRows.map(r=>`<tr><td>${esc(r.a)}</td><td><span class="pill ${r.rate>=70?'green':(r.rate>=40?'gold':'red')}">${r.rate}% right</span></td><td class="muted">${r.n} checks · ${r.s} shown</td></tr>`).join('')||'<tr><td class="muted">No balance checks yet.</td></tr>'}</table></div>
+    </div></div>`;
+}
+function renderTalk(){
+  const list=students(); const out=[];
+  for (const s of list){
+    const reasons=[];
+    for (const [cid,label] of COMPANIES){ const c=s.companies[cid]; if(!c||cid==='mine') continue;
+      const shown = STAGES.reduce((n,[k])=>n+((c.stages[k]||{}).shown||0),0);
+      if (shown>=3) reasons.push({why:`asked for ${shown} answers in ${label.split(' (')[0]}`, say:'Ask them to walk you through one of the shown entries with the three questions; if they can, it was impatience, not confusion.'});
+      const aj=c.stages.ajes||{}; if ((aj.done||0)>=3 && (aj.firstTry||0)/(aj.done||1) < 0.5 && (aj.shown||0)===0) reasons.push({why:`got adjustments on later tries (${aj.firstTry||0} of ${aj.done} first try) in ${label.split(' (')[0]}`, say:'Which question tripped them — what to recognize, or whether the cash moved? Their feedback lines on those items say which.'});
+      const started = STAGES.some(([k])=>(c.stages[k]||{}).done>0); const complete = STAGES.every(([k])=>{const st=c.stages[k]||{}; return st.total>0&&st.done===st.total;});
+      const idle = daysAgo(s.last); if (started && !complete && idle!==null && idle>=3) reasons.push({why:`started ${label.split(' (')[0]} but nothing in ${idle} days`, say:'A nudge: which step they stopped on is in the roster view.'});
+    }
+    const evs=s.events.filter(e=>e.kind==='entry'); const wrongRuns = evs.filter(e=>e.result==='wrong').length; const solved = evs.filter(e=>e.result==='correct'||e.result==='shown').length;
+    if (solved>=4 && wrongRuns >= solved*2) reasons.push({why:`${wrongRuns} wrong checks for ${solved} solved entries`, say:'Likely guessing through the dropdowns. Sit with them for two entries and have them say the two questions out loud before choosing.'});
+    if (reasons.length) out.push({s, reasons});
+  }
+  out.sort((a,b)=>b.reasons.length-a.reasons.length);
+  return `<div class="card"><h2>Who to talk to</h2><p class="small muted">Students flagged by what their record shows, most reasons first. Each line has a question to open with.</p>
+    ${out.map(({s,reasons})=>`<div style="padding:8px 0;border-top:1px solid var(--border)"><b>${esc(s.name)}</b> <span class="muted small">${esc(s.block||'')}</span>${reasons.map(r=>`<div style="margin-top:4px">• ${esc(r.why)}<div class="say">${esc(r.say)}</div></div>`).join('')}</div>`).join('')||'<p class="muted">Nobody flagged yet.</p>'}</div>`;
+}
+function render(){
+  $('#tabs').innerHTML = [['who','Who has done what'],['stuck','Where the class is stuck'],['talk','Who to talk to']].map(([id,l])=>`<button type="button" class="${tab===id?'active':''}" data-t="${id}">${l}</button>`).join('');
+  document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render();});
+  $('#main').innerHTML = tab==='who'?renderWho():(tab==='stuck'?renderStuck():renderTalk());
+  $('#foot').textContent = `Cycle Lab teacher page v${VERSION}${demo?' · demo data':''}${uid?' · your teacher id: '+uid:''}`;
+}
+function exportCSV(){
+  const list=students(); const lines=[['Name','Block','Devices',...COMPANIES.flatMap(([id,l])=>STAGES.map(([k,sl])=>l.split(' (')[0]+' '+sl)),'Credit stages','Last active'].join(',')];
+  for (const s of list){ const cells=COMPANIES.flatMap(([cid])=>STAGES.map(([k])=>{ const c=s.companies[cid]; const ss=c?stageState(c.stages[k],k):null; return ss?ss.text.replace('✓','done'):''; }));
+    lines.push([s.name, s.block||'', s.uids.size, ...cells, creditStages(s), when(s.last)].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')); }
+  const blob=new Blob([lines.join('\n')],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='cycle-lab-progress.csv'; a.click();
+}
+function decodeCode(){
+  const raw=$('#code').value.trim(); if(!raw) return;
+  try { const s=decodeURIComponent(escape(atob(raw.replace(/-/g,'+').replace(/_/g,'/')))); const parts=s.split('|'); const [name,block,flags,minute,sum]=parts;
+    let h=0; const payload=parts.slice(0,4).join('|'); for (const ch of payload+'cycle-lab-salt-2026') h=(h*31+ch.charCodeAt(0))>>>0;
+    const valid = h.toString(36)===sum;
+    const detail = flags.split(',').filter(Boolean).map(f=>{ const [cid,st]=f.split(':'); const cname = cid==='gi'?"Gilda's":(cid==='pe'?"Penny's":'Own'); return cname+': '+st.split('').map((ch,i)=>STAGES[i][1]+' '+(ch==='y'?'✓':(ch==='h'?'✓ (answers shown)':(ch==='p'?'partly':'—')))).join(', '); }).join('<br>');
+    $('#decoded').innerHTML = valid ? `<b>${esc(name)}</b> · ${esc(block)} · made ${new Date(minute*60000).toLocaleString()}<br>${detail}` : `<span class="pill red">This code does not verify</span> — it may have been edited or mistyped.`;
+  } catch(e){ $('#decoded').innerHTML='<span class="pill red">Not a valid code</span>'; }
+}
+function demoData(){
+  const names=['Ava R.','Ben T.','Chloe M.','Dev P.','Ella S.','Finn O.','Grace L.','Hugo K.','Isla W.','Jon B.','Kai N.','Lena F.']; const blocks=['Block 1','Block 1','Block 2','Block 2','Block 3','Block 3'];
+  const progress=[], events=[]; let eid=1; const now=Date.now();
+  names.forEach((name,i)=>{ const block=blocks[i%6]; const skill=0.35+0.6*(i/names.length);
+    const comp={}; const mk=(tot,kind)=>{ const done=Math.random()<skill?tot:Math.floor(tot*Math.random()); const firstTry=Math.round(done*skill); const shown=done===tot&&Math.random()>skill?Math.floor(Math.random()*3):0; return {total:tot,done,firstTry,shown}; };
+    comp.gilda={mode:'guided',stages:{journal:mk(8),post:{total:11,done:11},ajes:mk(6),balance:{total:16,done:Math.random()<skill?16:9,shown:0},tb:{total:1,done:Math.random()<skill?1:0}}};
+    if (i%3!==2) comp.penny={mode:'own',stages:{journal:mk(10),post:{total:12,done:Math.random()<skill?12:4},ajes:mk(7),balance:{total:17,done:Math.random()<skill?17:0,shown:Math.random()<.2?2:0},tb:{total:1,done:Math.random()<skill*0.8?1:0}}};
+    const uid='demo'+i; progress.push({uid,name,block,updatedAt:now-Math.floor(Math.random()*6)*86400000,summary:JSON.stringify({companies:comp})});
+    if (i===1) progress.push({uid:'demo1b',name,block,updatedAt:now-86400000,summary:JSON.stringify({companies:{gilda:{mode:'guided',stages:{journal:{total:8,done:8,firstTry:5,shown:0}}}}})});
+    for (const [cid,c] of Object.entries(comp)){ const items = cid==='gilda'?['T1','T2','T3','T4','T5','T6','T7','T8','A1','A2','A3','A4','A5','A6']:['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','A1','A2','A3','A4','A5','A6','A7'];
+      items.forEach(it=>{ const hard = ['T3','T4','A1','A3','A4'].includes(it); const p = skill*(hard?0.6:1); const tries = Math.random()<p?1:(Math.random()<0.6?2:3);
+        for (let t=1;t<tries;t++) events.push({uid,name,block,eventId:String(eid++),at:now-Math.floor(Math.random()*5)*86400000,company:cid,mode:c.mode,kind:'entry',item:it,result:'wrong',attempts:t});
+        const shown = tries===3 && Math.random()<0.35; events.push({uid,name,block,eventId:String(eid++),at:now-Math.floor(Math.random()*5)*86400000,company:cid,mode:c.mode,kind:'entry',item:it,result:shown?'shown':'correct',attempts:tries,firstTry:tries===1}); });
+      ['Cash','Accounts Receivable','Supplies','Prepaid Rent','Deferred Revenue','Accounts Payable'].forEach(a=>{ events.push({uid,name,block,eventId:String(eid++),at:now,company:cid,kind:'post',item:'txn:'+a,result:Math.random()<(a==='Cash'?0.5:0.8)?'ok':'issues'}); events.push({uid,name,block,eventId:String(eid++),at:now,company:cid,kind:'balance',item:a,result:Math.random()<(a==='Cash'?0.6:0.85)?'correct':'wrong',attempts:1}); }); } });
+  return {progress, events};
+}
+async function boot(){
+  $('#gate').innerHTML='<div class="note">Connecting…</div>';
+  try {
+    const c=await connect();
+    if (!c.demo && !c.authorized){ uid = uid||''; $('#gate').innerHTML=`<div class="err"><b>This device is not on the teacher list yet.</b> In the Firebase console (project journal-entry-arena → Firestore), add a document to the <code>cl_teachers</code> collection with this exact id, any field inside: <code>${esc(uid)}</code>. Then refresh. Students' work is already being recorded; only reading it needs this.</div>`; $('#foot').textContent=`your teacher id: ${uid}`; return; }
+    await loadData(c); $('#gate').innerHTML=''; render();
+  } catch(e){ $('#gate').innerHTML=`<div class="err">Could not reach the class record: ${esc(e.message||e)}. If the Firestore rules for cl_ collections are not published yet, that is the cause. <a href="?demo=1">See the page with demo data</a>.</div>`; }
+}
+$('#block').innerHTML='<option value="">all</option>'+['Block 1','Block 2','Block 3','Not in ACC 153'].map(b=>`<option>${b}</option>`).join('');
+$('#block').onchange=render; $('#shownLimit').onchange=render; $('#refresh').onclick=()=>boot(); $('#csv').onclick=exportCSV; $('#decode').onclick=decodeCode;
+if (demo || gateOK()) boot(); else askCode();
+window.__teacher={students, demoData, renderWho, renderStuck, renderTalk, decodeCode};
+</script>
+</body>
+</html>
