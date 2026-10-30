@@ -74,7 +74,8 @@ async function connect(){
   const a=app.getApps().length?app.getApp():app.initializeApp(FIREBASE); const au=auth.getAuth(a); const cred=au.currentUser?{user:au.currentUser}:await auth.signInAnonymously(au);
   uid=cred.user.uid; const db=fs.getFirestore(a);
   const me=await fs.getDoc(fs.doc(db,'cl_teachers',uid)).catch(()=>null);
-  const authorized = me && me.exists();
+  const me2=(me && me.exists()) ? null : await fs.getDoc(fs.doc(db,'cfl_teachers',uid)).catch(()=>null);
+  const authorized = (me && me.exists()) || (me2 && me2.exists());
   return {fs, db, authorized};
 }
 async function loadData(c){
