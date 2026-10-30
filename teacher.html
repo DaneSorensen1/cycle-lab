@@ -92,8 +92,8 @@ function students(){
     st.uids.add(p.uid); st.last=Math.max(st.last, p.updatedAt||0);
     for (const [cid,c] of Object.entries(sm.companies||{})){ const mine = st.companies[cid] ||= {stages:{}, mode:c.mode};
       for (const [k,v] of Object.entries(c.stages||{})){ const cur = mine.stages[k]; if (!cur || (v.done||0) > (cur.done||0)) mine.stages[k] = {...v}; } } }
-  const evByKey = {};
-  for (const e of events){ const k=key(e); (evByKey[k] ||= []).push(e); }
+  const evByKey = {}; const seen = new Set();
+  for (const e of events){ const dk=key(e)+'|'+e.company+'|'+e.kind+'|'+e.item+'|'+e.at; if (seen.has(dk)) continue; seen.add(dk); const k=key(e); (evByKey[k] ||= []).push(e); }
   for (const [k,st] of Object.entries(map)){ st.events = evByKey[k]||[]; st.last = Math.max(st.last, ...st.events.map(e=>e.at||0)); }
   const blk = $('#block').value;
   return Object.values(map).filter(s=>!blk || s.block===blk).sort((a,b)=>(a.block||'').localeCompare(b.block||'')||a.name.localeCompare(b.name));
@@ -178,19 +178,20 @@ function decodeCode(){
   } catch(e){ $('#decoded').innerHTML='<span class="pill red">Not a valid code</span>'; }
 }
 function demoData(){
+  let seed=7; const rnd=()=>{ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; }; const Math_random=rnd;
   const names=['Ava R.','Ben T.','Chloe M.','Dev P.','Ella S.','Finn O.','Grace L.','Hugo K.','Isla W.','Jon B.','Kai N.','Lena F.']; const blocks=['Block 1','Block 1','Block 2','Block 2','Block 3','Block 3'];
   const progress=[], events=[]; let eid=1; const now=Date.now();
   names.forEach((name,i)=>{ const block=blocks[i%6]; const skill=0.35+0.6*(i/names.length);
-    const comp={}; const mk=(tot,kind)=>{ const done=Math.random()<skill?tot:Math.floor(tot*Math.random()); const firstTry=Math.round(done*skill); const shown=done===tot&&Math.random()>skill?Math.floor(Math.random()*3):0; return {total:tot,done,firstTry,shown}; };
-    comp.gilda={mode:'guided',stages:{journal:mk(8),post:{total:11,done:11},ajes:mk(6),balance:{total:16,done:Math.random()<skill?16:9,shown:0},tb:{total:1,done:Math.random()<skill?1:0}}};
-    if (i%3!==2) comp.penny={mode:'own',stages:{journal:mk(10),post:{total:12,done:Math.random()<skill?12:4},ajes:mk(7),balance:{total:17,done:Math.random()<skill?17:0,shown:Math.random()<.2?2:0},tb:{total:1,done:Math.random()<skill*0.8?1:0}}};
-    const uid='demo'+i; progress.push({uid,name,block,updatedAt:now-Math.floor(Math.random()*6)*86400000,summary:JSON.stringify({companies:comp})});
+    const comp={}; const mk=(tot,kind)=>{ const done=rnd()<skill?tot:Math.floor(tot*rnd()); const firstTry=Math.round(done*skill); const shown=done===tot&&rnd()>skill?Math.floor(rnd()*3):0; return {total:tot,done,firstTry,shown}; };
+    comp.gilda={mode:'guided',stages:{journal:mk(8),post:{total:11,done:11},ajes:mk(6),balance:{total:16,done:rnd()<skill?16:9,shown:0},tb:{total:1,done:rnd()<skill?1:0}}};
+    if (i%3!==2) comp.penny={mode:'own',stages:{journal:mk(10),post:{total:12,done:rnd()<skill?12:4},ajes:mk(7),balance:{total:17,done:rnd()<skill?17:0,shown:rnd()<.2?2:0},tb:{total:1,done:rnd()<skill*0.8?1:0}}};
+    const uid='demo'+i; progress.push({uid,name,block,updatedAt:now-Math.floor(rnd()*6)*86400000,summary:JSON.stringify({companies:comp})});
     if (i===1) progress.push({uid:'demo1b',name,block,updatedAt:now-86400000,summary:JSON.stringify({companies:{gilda:{mode:'guided',stages:{journal:{total:8,done:8,firstTry:5,shown:0}}}}})});
     for (const [cid,c] of Object.entries(comp)){ const items = cid==='gilda'?['T1','T2','T3','T4','T5','T6','T7','T8','A1','A2','A3','A4','A5','A6']:['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','A1','A2','A3','A4','A5','A6','A7'];
-      items.forEach(it=>{ const hard = ['T3','T4','A1','A3','A4'].includes(it); const p = skill*(hard?0.6:1); const tries = Math.random()<p?1:(Math.random()<0.6?2:3);
-        for (let t=1;t<tries;t++) events.push({uid,name,block,eventId:String(eid++),at:now-Math.floor(Math.random()*5)*86400000,company:cid,mode:c.mode,kind:'entry',item:it,result:'wrong',attempts:t});
-        const shown = tries===3 && Math.random()<0.35; events.push({uid,name,block,eventId:String(eid++),at:now-Math.floor(Math.random()*5)*86400000,company:cid,mode:c.mode,kind:'entry',item:it,result:shown?'shown':'correct',attempts:tries,firstTry:tries===1}); });
-      ['Cash','Accounts Receivable','Supplies','Prepaid Rent','Deferred Revenue','Accounts Payable'].forEach(a=>{ events.push({uid,name,block,eventId:String(eid++),at:now,company:cid,kind:'post',item:'txn:'+a,result:Math.random()<(a==='Cash'?0.5:0.8)?'ok':'issues'}); events.push({uid,name,block,eventId:String(eid++),at:now,company:cid,kind:'balance',item:a,result:Math.random()<(a==='Cash'?0.6:0.85)?'correct':'wrong',attempts:1}); }); } });
+      items.forEach(it=>{ const hard = ['T3','T4','A1','A3','A4'].includes(it); const p = skill*(hard?0.6:1); const tries = rnd()<p?1:(rnd()<0.6?2:3);
+        for (let t=1;t<tries;t++) events.push({uid,name,block,eventId:String(eid++),at:now-Math.floor(rnd()*5)*86400000-eid,company:cid,mode:c.mode,kind:'entry',item:it,result:'wrong',attempts:t});
+        const shown = tries===3 && rnd()<0.35; events.push({uid,name,block,eventId:String(eid++),at:now-Math.floor(rnd()*5)*86400000-eid,company:cid,mode:c.mode,kind:'entry',item:it,result:shown?'shown':'correct',attempts:tries,firstTry:tries===1}); });
+      ['Cash','Accounts Receivable','Supplies','Prepaid Rent','Deferred Revenue','Accounts Payable'].forEach(a=>{ events.push({uid,name,block,eventId:String(eid++),at:now-eid,company:cid,kind:'post',item:'txn:'+a,result:rnd()<(a==='Cash'?0.5:0.8)?'ok':'issues'}); events.push({uid,name,block,eventId:String(eid++),at:now-eid,company:cid,kind:'balance',item:a,result:rnd()<(a==='Cash'?0.6:0.85)?'correct':'wrong',attempts:1}); }); } });
   return {progress, events};
 }
 async function boot(){
