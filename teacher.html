@@ -50,7 +50,7 @@ code{font-family:var(--mono);font-size:12.5px;background:var(--surface2);padding
 </div>
 <script>
 'use strict';
-const VERSION='0.4.2';
+const VERSION='0.4.3';
 const TEACHER_CODE='CYCLE-2026';
 const FIREBASE = { apiKey: "AIzaSyBnBpSSxGoxSSdPU188AhxiUmzJgvxUurc", authDomain: "journal-entry-arena.firebaseapp.com", projectId: "journal-entry-arena", storageBucket: "journal-entry-arena.firebasestorage.app", messagingSenderId: "378585775864", appId: "1:378585775864:web:57f5af35107c6bef4c850d" };
 const SDK='13.0.0';
@@ -121,8 +121,11 @@ function renderWho(){
 function renderStuck(){
   const list=students(); const evs=list.flatMap(s=>s.events);
   const items={};
-  for (const e of evs){ if (e.kind!=='entry') continue; const k=e.company+'|'+e.item; const it=items[k] ||= {company:e.company,item:e.item,students:new Set(),wrong:0,correct:0,shown:0,firstTry:0,attempts:0};
-    it.students.add(e.name+'|'+e.block); if (e.result==='wrong') it.wrong++; if (e.result==='correct'){ it.correct++; it.attempts+=e.attempts||0; if (e.firstTry) it.firstTry++; } if (e.result==='shown') it.shown++; }
+  const allBlocks = $('#block').value ? [] : [...new Set(list.map(s=>s.block||''))].sort();
+  for (const e of evs){ if (e.kind!=='entry') continue; const k=e.company+'|'+e.item; const it=items[k] ||= {company:e.company,item:e.item,students:new Set(),wrong:0,correct:0,shown:0,firstTry:0,attempts:0,byBlock:{}};
+    it.students.add(e.name+'|'+e.block); const bb = it.byBlock[e.block||''] ||= {solved:0,firstTry:0};
+    if (e.result==='wrong') it.wrong++; if (e.result==='correct'){ it.correct++; it.attempts+=e.attempts||0; bb.solved++; if (e.firstTry){ it.firstTry++; bb.firstTry++; } } if (e.result==='shown'){ it.shown++; bb.solved++; } }
+  const blockCell = it => allBlocks.length<2 ? '' : '<td class="say">'+allBlocks.map(b=>{ const bb=it.byBlock[b]; return bb&&bb.solved? `${esc(b)}: ${Math.round(100*bb.firstTry/bb.solved)}%` : `${esc(b)}: —`; }).join('<br>')+'</td>';
   const rows = Object.values(items).filter(it=>it.company!=='mine' && (it.correct+it.shown)>0).map(it=>{ const solved=it.correct+it.shown; const ft=Math.round(100*it.firstTry/solved); return {...it, solved, ft, avg:(it.correct? (it.attempts/it.correct).toFixed(1):'—')}; }).sort((a,b)=>a.ft-b.ft);
   const posts = {}; for (const e of evs){ if (e.kind!=='post') continue; const a=e.item.split(':')[1]; const p=posts[a] ||= {ok:0,issues:0}; if (e.result==='ok') p.ok++; else p.issues++; }
   const postRows = Object.entries(posts).map(([a,p])=>({a, rate: p.ok+p.issues? Math.round(100*p.ok/(p.ok+p.issues)):0, n:p.ok+p.issues})).sort((x,y)=>x.rate-y.rate).slice(0,6);
@@ -130,8 +133,9 @@ function renderStuck(){
   const balRows = Object.entries(bals).map(([a,b])=>({a, rate: b.c+b.w? Math.round(100*b.c/(b.c+b.w)):0, n:b.c+b.w+b.s, s:b.s})).sort((x,y)=>x.rate-y.rate).slice(0,6);
   return `<div class="card"><h2>Where the class is stuck</h2>
     <p class="small muted">Entries ranked by first-try rate (lowest first). "Shown" counts students who asked for the answer. The trap column is the mistake that item usually catches — a good opener for the next class.</p>
-    <table><tr><th>Company</th><th>Item</th><th>Students</th><th>First try</th><th>Avg checks</th><th>Shown</th><th>Usual trap</th></tr>
-    ${rows.map(it=>`<tr><td>${esc(COMPANIES.find(c=>c[0]===it.company)?.[1]||it.company)}</td><td>${esc((ITEM_LABELS[it.company]||{})[it.item]||it.item)}</td><td>${it.students.size}</td><td><span class="pill ${it.ft>=70?'green':(it.ft>=40?'gold':'red')}">${it.ft}%</span></td><td>${it.avg}</td><td>${it.shown}</td><td class="say">${esc(TRAP[it.item]||'')}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">No entry checks yet.</td></tr>'}</table>
+    <table><tr><th>Company</th><th>Item</th><th>Students</th><th>First try</th>${allBlocks.length>1?'<th>By block</th>':''}<th>Avg checks</th><th>Shown</th><th>Usual trap</th></tr>
+    ${rows.map(it=>`<tr><td>${esc(COMPANIES.find(c=>c[0]===it.company)?.[1]||it.company)}</td><td>${esc((ITEM_LABELS[it.company]||{})[it.item]||it.item)}</td><td>${it.students.size}</td><td><span class="pill ${it.ft>=70?'green':(it.ft>=40?'gold':'red')}">${it.ft}%</span></td>${blockCell(it)}<td>${it.avg}</td><td>${it.shown}</td><td class="say">${esc(TRAP[it.item]||'')}</td></tr>`).join('')||'<tr><td colspan="8" class="muted">No entry checks yet.</td></tr>'}</table>
+    <p class="small muted" style="margin:6px 0 0">Use the Block selector at the top to see any one block on its own; the posting and balance lists below follow it too.</p>
     <h2 style="margin-top:14px">Posting and balances</h2>
     <div class="bar" style="align-items:flex-start;gap:24px">
       <div style="flex:1;min-width:260px"><div class="small muted">Accounts most often posted wrong on the first check</div><table>${postRows.map(r=>`<tr><td>${esc(r.a)}</td><td><span class="pill ${r.rate>=70?'green':(r.rate>=40?'gold':'red')}">${r.rate}% right</span></td><td class="muted">${r.n} checks</td></tr>`).join('')||'<tr><td class="muted">No posting checks yet.</td></tr>'}</table></div>
@@ -153,9 +157,12 @@ function renderTalk(){
     if (solved>=4 && wrongRuns >= solved*2) reasons.push({why:`${wrongRuns} wrong checks for ${solved} solved entries`, say:'Likely guessing through the dropdowns. Sit with them for two entries and have them say the two questions out loud before choosing.'});
     if (reasons.length) out.push({s, reasons});
   }
-  out.sort((a,b)=>b.reasons.length-a.reasons.length);
-  return `<div class="card"><h2>Who to talk to</h2><p class="small muted">Students flagged by what their record shows, most reasons first. Each line has a question to open with.</p>
-    ${out.map(({s,reasons})=>`<div style="padding:8px 0;border-top:1px solid var(--border)"><b>${esc(s.name)}</b> <span class="muted small">${esc(s.block||'')}</span>${reasons.map(r=>`<div style="margin-top:4px">• ${esc(r.why)}<div class="say">${esc(r.say)}</div></div>`).join('')}</div>`).join('')||'<p class="muted">Nobody flagged yet.</p>'}</div>`;
+  out.sort((a,b)=>(a.s.block||'').localeCompare(b.s.block||'')||b.reasons.length-a.reasons.length);
+  let lastBlock=null; const parts=[];
+  for (const {s,reasons} of out){ if (s.block!==lastBlock){ lastBlock=s.block; parts.push(`<h3 style="font-size:15px;margin:14px 0 2px;color:var(--navy)">${esc(s.block||'No block')}</h3>`); }
+    parts.push(`<div style="padding:8px 0;border-top:1px solid var(--border)"><b>${esc(s.name)}</b>${reasons.map(r=>`<div style="margin-top:4px">• ${esc(r.why)}<div class="say">${esc(r.say)}</div></div>`).join('')}</div>`); }
+  return `<div class="card"><h2>Who to talk to</h2><p class="small muted">Students flagged by what their record shows, grouped by block, most reasons first. Each line has a question to open with.</p>
+    ${parts.join('')||'<p class="muted">Nobody flagged yet.</p>'}</div>`;
 }
 function render(){
   $('#tabs').innerHTML = [['who','Who has done what'],['stuck','Where the class is stuck'],['talk','Who to talk to']].map(([id,l])=>`<button type="button" class="${tab===id?'active':''}" data-t="${id}">${l}</button>`).join('');
