@@ -266,7 +266,7 @@ code.code{font-family:var(--mono);font-size:12px;background:var(--surface2);padd
 
 <script>
 'use strict';
-const VERSION = '0.4.0';
+const VERSION = '0.4.1';
 const STORE_KEY = 'cycle-lab-v2';
 
 // ───────────────────────────── Accounts ─────────────────────────────
@@ -780,7 +780,7 @@ function progressPanel(){
     return `<tr><td>${esc(s.id===CUSTOM_ID?'Build your own':s.name)}<br><span class="small muted">${MODE_LABEL[c.mode].split(' — ')[0]}</span></td>${cells}</tr>`; }).join('');
   return `<div class="card"><h2>My progress</h2>
     <table class="progtab"><tr><th>Company</th>${STAGES.map(([k,l])=>`<th>${l}</th>`).join('')}</tr>${rows}</table>
-    <p class="small muted" style="margin:8px 0 0">A green check means the stage is finished with at most one answer shown. "Shown" means you asked for the answer instead of solving it — it still counts as finished, but Mr. Sorensen can see the difference. Your work saves on this device${identityOK()?' and syncs to the class record':''}.</p>
+    <p class="small muted" style="margin:8px 0 0">A green check means the stage is finished with at most one answer shown. "Shown" means you asked for the answer instead of solving it — it still counts as finished, but I can see the difference. Your work saves on this device${identityOK()?' and syncs to the class record':''}.</p>
     ${identityOK()?`<p class="small muted" style="margin:6px 0 0">Completion code (if the class record is unreachable): <code class="code">${completionCode()}</code></p>`:''}</div>`;
 }
 function resumeCard(){
@@ -791,7 +791,7 @@ function resumeCard(){
 }
 function signInCard(){
   return `<div class="card" id="signin"><h2>Who is working?</h2>
-    <p>Mr. Sorensen uses this to see what you finished (and for the extra credit). Your work also saves on this device.</p>
+    <p>I use this to see what you finished (and for the extra credit). Your work also saves on this device.</p>
     <div class="form">
       <label>First name<input type="text" id="si-first" autocomplete="given-name" maxlength="30"></label>
       <label>Last initial<input type="text" id="si-last" maxlength="1" autocomplete="off"></label>
@@ -852,7 +852,7 @@ function render(){
   $('#scenario').value=s.id;
   $('#modepill').textContent = MODE_LABEL[mode()];
   const who=$('#whopill'); if (identityOK()){ who.textContent = state.identity.name+' · '+state.identity.block+' · switch'; who.classList.remove('hidden'); } else who.classList.add('hidden');
-  if (!state.identity){ $('#steps').innerHTML=''; $('#main').innerHTML = signInCard(); $('#foot').textContent = `Sorensen's Cycle Lab v${VERSION} · Mr. Sorensen · ACC 153`; return; }
+  if (!state.identity){ $('#steps').innerHTML=''; $('#main').innerHTML = signInCard(); $('#foot').textContent = `Sorensen's Cycle Lab v${VERSION} · ACC 153`; return; }
   const author = mode()==='author';
   $('#steps').innerHTML = STEPS.map(st=>{ const p = author?null:progress(st.id); const badge = p ? `<span class="prog ${p[0]===p[1]&&p[1]>0?'done':''}">${p[0]}/${p[1]}</span>` : '';
     return `<button type="button" class="${state.step===st.id?'active':''}" onclick="setStep('${st.id}')"><span class="n">${st.n}</span>${st.label}${badge}</button>`; }).join('')
@@ -860,7 +860,7 @@ function render(){
   const main=$('#main');
   if (state.step==='all') main.innerHTML = STEPS.filter(st=>st.id!=='setup').map(st=>`<div class="allsep">Step ${st.n} · ${st.label}</div>`+renderSolution(st.id)).join('');
   else main.innerHTML = renderStep(state.step) + stepNav(state.step);
-  $('#foot').textContent = `Sorensen's Cycle Lab v${VERSION} · Mr. Sorensen · ACC 153`;
+  $('#foot').textContent = `Sorensen's Cycle Lab v${VERSION} · ACC 153`;
 }
 function stepNav(id){
   const i = STEPS.findIndex(s=>s.id===id); if (i<0) return '';
