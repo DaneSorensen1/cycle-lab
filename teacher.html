@@ -44,13 +44,16 @@ code{font-family:var(--mono);font-size:12.5px;background:var(--surface2);padding
   <div id="gate"></div>
   <nav class="q" id="tabs"></nav>
   <main id="main"></main>
+  <div class="card"><h2>Rosters</h2><p class="small muted">Students sign in with a first name and last initial. Paste your class lists here (kept only in this browser) and the roster view shows full names, flags anyone it can't match, and lists who hasn't started. Start a block with a line like <code>Block 1</code>, then one student per line.</p>
+    <textarea id="rosters" rows="6" style="width:100%;font:13px var(--mono);border:1px solid var(--border2);border-radius:6px;padding:8px;background:var(--surface);color:var(--text)" placeholder="Block 1&#10;Aiden Austria&#10;Mason Groboski&#10;Block 2&#10;..."></textarea>
+    <div class="bar" style="margin-top:6px"><button class="btn ghost" type="button" id="saveRosters">Save rosters</button><span class="small muted" id="rosterNote"></span></div></div>
   <div class="card"><h2>Check a completion code</h2><p class="small muted">If a student shows you a code from their Setup page (used when the class record wasn't reachable), paste it here.</p>
     <div class="bar"><input id="code" type="text" placeholder="paste the code" style="flex:1;min-width:240px"><button class="btn ghost" type="button" id="decode">Decode</button></div><div id="decoded" class="small" style="margin-top:6px"></div></div>
   <p class="small muted" id="foot"></p>
 </div>
 <script>
 'use strict';
-const VERSION='0.4.3';
+const VERSION='0.4.4';
 const TEACHER_CODE='CYCLE-2026';
 const FIREBASE = { apiKey: "AIzaSyBnBpSSxGoxSSdPU188AhxiUmzJgvxUurc", authDomain: "journal-entry-arena.firebaseapp.com", projectId: "journal-entry-arena", storageBucket: "journal-entry-arena.firebasestorage.app", messagingSenderId: "378585775864", appId: "1:378585775864:web:57f5af35107c6bef4c850d" };
 const SDK='13.0.0';
@@ -99,6 +102,14 @@ function students(){
   const blk = $('#block').value;
   return Object.values(map).filter(s=>!blk || s.block===blk).sort((a,b)=>(a.block||'').localeCompare(b.block||'')||a.name.localeCompare(b.name));
 }
+function loadRosters(){ try { return JSON.parse(localStorage.getItem('cl_rosters')||'{}'); } catch(e){ return {}; } }
+function parseRosters(text){ const out={}; let cur=null; for (let line of text.split('\n')){ line=line.trim(); if(!line) continue; const m=line.match(/^block\s*(\d+)\s*:?$/i); if (m){ cur='Block '+m[1]; out[cur] ||= []; continue; } if (/^not in acc/i.test(line)){ cur='Not in ACC 153'; out[cur] ||= []; continue; } if (cur) out[cur].push(line.replace(/\s+/g,' ')); } return out; }
+function saveRosters(){ const r=parseRosters($('#rosters').value); localStorage.setItem('cl_rosters', JSON.stringify(r)); $('#rosterNote').textContent = Object.entries(r).map(([b,l])=>`${b}: ${l.length}`).join(' · ') || 'nothing saved'; render(); }
+// match "First L." to a roster line in the same block: exact first name, or a nickname-style match (one name a prefix of the other, or the same first three letters), with the same last initial; unique or nothing
+function rosterMatch(s){ const r=loadRosters()[s.block]||[]; const [f,li]=(s.name||'').split(' '); if(!f||!li) return null; const F=f.toLowerCase(), L=li[0].toLowerCase();
+  const cand = r.filter(full=>{ const parts=full.split(' '); if(parts.length<2) return false; const rf=parts[0].toLowerCase(), rl=parts[parts.length-1][0].toLowerCase(); if (rl!==L) return false; return rf===F || rf.startsWith(F) || F.startsWith(rf) || (rf.slice(0,3)===F.slice(0,3)); });
+  if (cand.length!==1) return null; const exact = cand[0].split(' ')[0].toLowerCase()===F; return {full:cand[0], exact}; }
+function notStarted(list){ const r=loadRosters(); const out={}; for (const [b,names] of Object.entries(r)){ const matched=new Set(list.filter(s=>s.block===b).map(s=>{ const m=rosterMatch(s); return m?m.full:null; }).filter(Boolean)); out[b]=names.filter(n=>!matched.has(n)); } return out; }
 function stageState(st, k){ if (!st) return null; const t=st.total||0, d=st.done||0; if (!t) return null; if (d<t) return {state:'partial', text:`${d}/${t}`}; const shown=st.shown||0; return {state: shown>+$('#shownLimit').value ? 'help' : 'full', text: shown?`✓ ${shown}sh`:'✓', shown}; }
 function creditStages(s){ let n=0; for (const cid of ['gilda','penny']){ const c=s.companies[cid]; if(!c) continue; for (const [k] of STAGES){ const ss=stageState(c.stages[k],k); if (ss && ss.state==='full') n++; } } return n; }
 const when = t => t ? new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'}) : '—';
@@ -107,15 +118,19 @@ const daysAgo = t => t ? Math.floor((Date.now()-t)/86400000) : null;
 // ---- the three views ----
 function renderWho(){
   const list=students();
+  const haveRosters = Object.keys(loadRosters()).length>0;
   const head = `<tr><th>Student</th><th>Block</th>${COMPANIES.map(([id,l])=>`<th>${l}</th>`).join('')}<th>Credit stages</th><th>Last active</th></tr>`;
-  const rows = list.map(s=>{
+  const ns = haveRosters ? notStarted(list) : {}; const blk=$('#block').value;
+  const nsLine = haveRosters ? Object.entries(ns).filter(([b])=>!blk||b===blk).map(([b,names])=>`<div class="note"><b>${esc(b)} — not started (${names.length}):</b> ${names.map(esc).join(', ')||'everyone has started'}</div>`).join('') : '';
+  const rows = list.map(s=>{ const rm = haveRosters ? rosterMatch(s) : null;
+    const nameCell = `${esc(s.name)}${rm?` <span class="muted small">${rm.exact?'':'≈ '}${esc(rm.full)}</span>`:(haveRosters&&loadRosters()[s.block]?' <span class="pill red" title="No roster name with this first name and initial in this block">not on roster</span>':'')}`;
     const cells = COMPANIES.map(([cid])=>{ const c=s.companies[cid]; if(!c) return '<td><span class="muted small">—</span></td>';
       return '<td>'+STAGES.map(([k,l])=>{ const ss=stageState(c.stages[k],k); if(!ss) return `<span class="stage muted" title="${l}">·</span>`;
         const cls = ss.state==='full'?'green':(ss.state==='help'?'gold':'gray'); return `<span class="stage pill ${cls}" title="${l}">${ss.text}</span>`; }).join(' ')+'</td>'; }).join('');
-    return `<tr><td>${esc(s.name)}${s.uids.size>1?` <span class="pill gray" title="${s.uids.size} devices merged">${s.uids.size} devices</span>`:''}</td><td>${esc(s.block||'')}</td>${cells}<td><b>${creditStages(s)}</b> of 10</td><td>${when(s.last)}</td></tr>`; }).join('');
+    return `<tr><td>${nameCell}${s.uids.size>1?` <span class="pill gray" title="${s.uids.size} devices merged">${s.uids.size} devices</span>`:''}</td><td>${esc(s.block||'')}</td>${cells}<td><b>${creditStages(s)}</b> of 10</td><td>${when(s.last)}</td></tr>`; }).join('');
   return `<div class="card"><h2>Who has done what</h2>
     <div class="note">A stage earns credit when it is finished with at most <b>${$('#shownLimit').value}</b> answer${$('#shownLimit').value==='1'?'':'s'} shown (Gilda's and Penny's count; the built company is practice). Green = earns credit · gold = finished but too many answers shown · gray = partly done.</div>
-    <table>${head}${rows||'<tr><td colspan="7" class="muted">No students yet.</td></tr>'}</table>
+    ${nsLine}<table>${head}${rows||'<tr><td colspan="7" class="muted">No students yet.</td></tr>'}</table>
     <div class="legend"><span>"3sh" = three answers shown in that stage.</span><span>Devices merge by name and block.</span><span>${list.length} students shown.</span></div></div>`;
 }
 function renderStuck(){
@@ -171,9 +186,9 @@ function render(){
   $('#foot').textContent = `Cycle Lab teacher page v${VERSION}${demo?' · demo data':''}${uid?' · your teacher id: '+uid:''}`;
 }
 function exportCSV(){
-  const list=students(); const lines=[['Name','Block','Devices',...COMPANIES.flatMap(([id,l])=>STAGES.map(([k,sl])=>l.split(' (')[0]+' '+sl)),'Credit stages','Last active'].join(',')];
+  const list=students(); const lines=[['Name','Roster name','Block','Devices',...COMPANIES.flatMap(([id,l])=>STAGES.map(([k,sl])=>l.split(' (')[0]+' '+sl)),'Credit stages','Last active'].join(',')];
   for (const s of list){ const cells=COMPANIES.flatMap(([cid])=>STAGES.map(([k])=>{ const c=s.companies[cid]; const ss=c?stageState(c.stages[k],k):null; return ss?ss.text.replace('✓','done'):''; }));
-    lines.push([s.name, s.block||'', s.uids.size, ...cells, creditStages(s), when(s.last)].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')); }
+    const rm=rosterMatch(s); lines.push([s.name, rm?rm.full:'', s.block||'', s.uids.size, ...cells, creditStages(s), when(s.last)].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')); }
   const blob=new Blob([lines.join('\n')],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='cycle-lab-progress.csv'; a.click();
 }
 function decodeCode(){
@@ -211,7 +226,7 @@ async function boot(){
   } catch(e){ $('#gate').innerHTML=`<div class="err">Could not reach the class record: ${esc(e.message||e)}. If the Firestore rules for cl_ collections are not published yet, that is the cause. <a href="?demo=1">See the page with demo data</a>.</div>`; }
 }
 $('#block').innerHTML='<option value="">all</option>'+['Block 1','Block 2','Block 3','Not in ACC 153'].map(b=>`<option>${b}</option>`).join('');
-$('#block').onchange=render; $('#shownLimit').onchange=render; $('#refresh').onclick=()=>boot(); $('#csv').onclick=exportCSV; $('#decode').onclick=decodeCode;
+$('#block').onchange=render; $('#saveRosters').onclick=saveRosters; (function(){ const r=loadRosters(); $('#rosters').value=Object.entries(r).map(([b,l])=>b+'\n'+l.join('\n')).join('\n'); })(); $('#shownLimit').onchange=render; $('#refresh').onclick=()=>boot(); $('#csv').onclick=exportCSV; $('#decode').onclick=decodeCode;
 if (demo || gateOK()) boot(); else askCode();
 setInterval(()=>{ if (!demo && gateOK() && !document.querySelector('#pc')) boot(); }, 60000);
 window.__teacher={students, demoData, renderWho, renderStuck, renderTalk, decodeCode};
