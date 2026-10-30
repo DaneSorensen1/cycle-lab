@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sorensen's Cycle Lab</title>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f5f4f0;--surface:#ffffff;--surface2:#f0efe9;--border:#dddbd3;--border2:#c8c6bc;
+  --text:#1a1917;--text2:#5f5d55;--text3:#9a9890;
+  --navy:#1b2a4a;--navy-bg:#e9edf5;--gold:#b8860b;--gold-bg:#fbf4e3;--gold-border:#ecd79a;
+  --green:#1a6b3c;--green-bg:#e9f4ee;--green-border:#b3d9c1;
+  --blue:#1e4fd8;--blue-bg:#eef1fc;--blue-border:#c0caef;
+  --red:#b83232;--red-bg:#faeaea;--red-border:#f0bcbc;
+  --mark1:#ffe9a8;--mark2:#cfe6ff;--mark3:#d9f2dc;--mark4:#f3d9f7;
+  --flash:rgba(232,160,32,.35);
+  --radius:10px;--radius-sm:6px;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#15171c;--surface:#1e2127;--surface2:#262a32;--border:#363b45;--border2:#4a505c;
+    --text:#ecebe6;--text2:#b2b0a8;--text3:#7d7b74;
+    --navy:#c7d3ee;--navy-bg:#232c40;--gold:#e0b347;--gold-bg:#2d2715;--gold-border:#5e4d1e;
+    --green:#7fcf9c;--green-bg:#17301f;--green-border:#2c5a3a;
+    --blue:#8fa9f5;--blue-bg:#1d2540;--blue-border:#33427a;
+    --red:#f08b8b;--red-bg:#3a1f1f;--red-border:#5c2b2b;
+    --mark1:#5a4a14;--mark2:#1f3a5c;--mark3:#1f4a2a;--mark4:#4a2a4f;--flash:rgba(224,179,71,.35);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#15171c;--surface:#1e2127;--surface2:#262a32;--border:#363b45;--border2:#4a505c;
+  --text:#ecebe6;--text2:#b2b0a8;--text3:#7d7b74;
+  --navy:#c7d3ee;--navy-bg:#232c40;--gold:#e0b347;--gold-bg:#2d2715;--gold-border:#5e4d1e;
+  --green:#7fcf9c;--green-bg:#17301f;--green-border:#2c5a3a;
+  --blue:#8fa9f5;--blue-bg:#1d2540;--blue-border:#33427a;
+  --red:#f08b8b;--red-bg:#3a1f1f;--red-border:#5c2b2b;
+  --mark1:#5a4a14;--mark2:#1f3a5c;--mark3:#1f4a2a;--mark4:#4a2a4f;--flash:rgba(224,179,71,.35);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 var(--sans)}
+button{font:inherit;cursor:pointer}
+input,select{font:inherit}
+a{color:var(--blue)}
+.wrap{max-width:1080px;margin:0 auto;padding:16px 16px 96px}
+header.top{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;margin-bottom:10px}
+header.top h1{font-size:22px;margin:0;color:var(--navy);letter-spacing:.2px}
+header.top h1 small{display:block;font-size:13px;font-weight:400;color:var(--text2);margin-top:2px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+select,.toggle,input[type=text],input[type=number]{border:1px solid var(--border2);background:var(--surface);color:var(--text);border-radius:var(--radius-sm);padding:7px 10px;font-size:14px}
+.toggle{display:inline-flex;align-items:center;gap:8px}
+.toggle.on{background:var(--gold-bg);border-color:var(--gold-border);color:var(--text)}
+.toggle .dot{width:10px;height:10px;border-radius:50%;background:var(--border2)}
+.toggle.on .dot{background:var(--gold)}
+nav.steps{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 14px}
+nav.steps button{border:1px solid var(--border);background:var(--surface);color:var(--text2);border-radius:999px;padding:6px 12px;font-size:13.5px;position:relative}
+nav.steps button .n{display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:50%;background:var(--surface2);color:var(--text2);font-size:11.5px;font-weight:700;text-align:center;margin-right:6px}
+nav.steps button.seen .n{background:var(--green-bg);color:var(--green)}
+nav.steps button.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+nav.steps button.active .n{background:rgba(255,255,255,.22);color:#fff}
+nav.steps button.all{margin-left:auto}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px}
+.card h2{font-size:18px;margin:0 0 6px;color:var(--navy)}
+.card h3{font-size:15px;margin:14px 0 6px;color:var(--navy)}
+.muted{color:var(--text2)}
+.small{font-size:13.5px}
+.stepintro p{margin:4px 0}
+.goal{background:var(--navy-bg);border-radius:var(--radius-sm);padding:8px 12px;font-size:14px;color:var(--text);margin-top:8px}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:.2px;white-space:nowrap}
+.pill.gold{background:var(--gold-bg);color:var(--gold);border:1px solid var(--gold-border)}
+.ev{border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin:10px 0;background:var(--surface)}
+.ev .head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.ev .date{font-family:var(--mono);font-size:13px;color:var(--text2);min-width:44px}
+.ev .text{flex:1 1 320px;font-size:15.5px}
+.ev .tools{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.lnk{border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:var(--radius-sm);padding:4px 9px;font-size:13px}
+.lnk:hover{border-color:var(--border2)}
+.lnk.think{background:var(--gold-bg);border-color:var(--gold-border)}
+.lnk.reveal{background:var(--green-bg);border-color:var(--green-border);color:var(--green);font-weight:600}
+.lnk.danger{background:var(--red-bg);border-color:var(--red-border);color:var(--red)}
+.acct{color:var(--blue);text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer;background:none;border:0;padding:0;font:inherit;font-weight:inherit}
+mark.cue{padding:0 3px;border-radius:3px;background:var(--mark1);color:inherit;font-weight:600}
+mark.cue.c2{background:var(--mark2)} mark.cue.c3{background:var(--mark3)} mark.cue.c4{background:var(--mark4)}
+.cuen{display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:50%;font-size:11px;font-weight:700;text-align:center;margin-right:6px;background:var(--mark1);color:var(--text)}
+.cuen.c2{background:var(--mark2)} .cuen.c3{background:var(--mark3)} .cuen.c4{background:var(--mark4)}
+.je{width:100%;border-collapse:collapse;margin-top:8px;font-size:15px}
+.je td,.je th{border:1px solid var(--border);padding:5px 8px;vertical-align:middle}
+.je th{background:var(--surface2);font-weight:600;font-size:13px;text-align:left;color:var(--text2)}
+.je td.d{font-family:var(--mono);font-size:13px;color:var(--text2);width:52px}
+.je td.amt{font-family:var(--mono);text-align:right;width:92px;white-space:nowrap}
+.je td.cr-acct{padding-left:30px}
+.je .lab{color:var(--text3);font-size:12px;margin-left:8px}
+.why{margin:8px 0 0;color:var(--gold);font-weight:600;font-size:14.5px}
+.think{margin-top:8px;background:var(--gold-bg);border:1px solid var(--gold-border);border-radius:var(--radius-sm);padding:10px 12px;font-size:14.5px}
+.think .q{font-weight:700;color:var(--navy);margin-top:10px}
+.think .q:first-child{margin-top:0}
+.think ul{margin:4px 0 0;padding-left:0;list-style:none}
+.think li{margin:3px 0}
+.derive{margin-top:4px;background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:var(--radius-sm);padding:8px 12px;font-size:14px;font-family:var(--mono)}
+.check{margin-top:8px;font-size:13.5px;color:var(--text2)}
+.eq{margin-top:8px;font-family:var(--mono);font-size:13.5px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px}
+.eq .note{font-family:var(--sans);color:var(--text2);font-size:13px;margin-top:4px}
+.lands{margin-top:10px;border:1px dashed var(--border2);border-radius:var(--radius-sm);padding:10px 12px;background:var(--surface)}
+.lands .beyond{font-size:12px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--text3)}
+.lands .two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.lands .stmt{border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;background:var(--surface2);font-size:13.5px}
+.lands .stmt .t{font-weight:700;color:var(--navy);border-bottom:1px solid var(--border);padding-bottom:3px;margin-bottom:6px}
+.lands .stmt .line{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:13px;padding:2px 0}
+.lands .stmt .sub{color:var(--text2);font-size:12.5px;padding:2px 0 2px 10px}
+.lands .arrow{text-align:center;color:var(--text2);font-size:13px;margin-top:6px}
+@media (max-width:640px){.lands .two{grid-template-columns:1fr}}
+.covered{border:1px dashed var(--border2);border-radius:var(--radius-sm);padding:10px 12px;margin-top:8px;background:var(--surface2);display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:14px;color:var(--text2)}
+.hidden{display:none !important}
+.flash{animation:flash 2.4s ease-out}
+@keyframes flash{0%{background:var(--flash);box-shadow:0 0 0 3px var(--flash)}70%{background:var(--flash);box-shadow:0 0 0 3px var(--flash)}100%{background:transparent;box-shadow:none}}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:10px}
+.ta{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 10px 8px;scroll-margin-top:12px}
+.ta .name{text-align:center;font-weight:700;color:var(--navy);font-size:14.5px;border-bottom:2px solid var(--navy);padding-bottom:4px}
+.ta .cols{display:grid;grid-template-columns:1fr 1fr;min-height:44px}
+.ta .col{padding:4px 0}
+.ta .col.l{border-right:2px solid var(--navy);padding-right:6px}
+.ta .col.r{padding-left:6px}
+.ta .p{display:flex;justify-content:space-between;gap:6px;font-family:var(--mono);font-size:12.5px;padding:2px 2px;border-radius:4px;background:none;border:0;width:100%;color:var(--text);text-align:left;cursor:pointer}
+.ta .p:hover{background:var(--surface2)}
+.ta .p.beg{color:var(--text2);cursor:default}
+.ta .p.beg:hover{background:none}
+.ta .p .lab{color:var(--text3)}
+.ta .p.adj .lab{color:var(--gold);font-weight:700}
+.ta .bal{display:grid;grid-template-columns:1fr 1fr;margin-top:6px;border-top:1px solid var(--border);padding-top:4px;font-family:var(--mono);font-size:13px;font-weight:700}
+.ta .bal div{padding:0 2px}
+.ta .bal .r{text-align:right}
+.ta .bal .v{border-bottom:3px double var(--navy);display:inline-block}
+.ta .ex{margin-top:6px;text-align:center}
+.ta .exp{font-size:12.5px;color:var(--text2);margin-top:6px;border-top:1px dashed var(--border);padding-top:6px;font-family:var(--mono)}
+.tb{margin:10px auto 0;max-width:560px;background:var(--surface)}
+.tb h3{text-align:center;margin:0}
+.tb .sub{text-align:center;color:var(--text2);font-size:14px;margin-bottom:8px}
+.tb table{width:100%;border-collapse:collapse;font-size:15px}
+.tb th{text-align:right;font-weight:600;border-bottom:1px solid var(--navy);padding:4px 6px;color:var(--text2);font-size:13px}
+.tb th:first-child{text-align:left}
+.tb td{padding:4px 6px;border-bottom:1px solid var(--border)}
+.tb td.amt{text-align:right;font-family:var(--mono);width:110px;white-space:nowrap}
+.tb tr.tot td{font-weight:700;border-top:1px solid var(--navy);border-bottom:3px double var(--navy)}
+.tb tr.row:hover td{background:var(--surface2)}
+.tie{text-align:center;margin-top:10px;font-weight:700;color:var(--green)}
+.faq details{border-top:1px solid var(--border);padding:6px 0}
+.faq details:first-of-type{border-top:0}
+.faq summary{cursor:pointer;font-weight:600;color:var(--navy);font-size:14.5px}
+.faq p{margin:4px 0 2px;font-size:14.5px}
+.stepnav{display:flex;justify-content:space-between;gap:10px;margin:6px 0 4px}
+.stepnav button{border:1px solid var(--border2);background:var(--surface);color:var(--navy);border-radius:var(--radius-sm);padding:8px 14px;font-size:14px;font-weight:600}
+.stepnav button.next{background:var(--navy);color:#fff;border-color:var(--navy)}
+.ref{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--border);margin:14px -16px -96px;padding:8px 16px calc(10px + env(safe-area-inset-bottom,0px));z-index:5}
+.ref summary{cursor:pointer;font-weight:600;color:var(--navy);font-size:14px;list-style:none}
+.ref summary::-webkit-details-marker{display:none}
+.ref .body{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;font-size:13.5px;margin-top:6px}
+.ref table{border-collapse:collapse;font-size:12.5px;width:100%}
+.ref td,.ref th{border:1px solid var(--border);padding:3px 6px;text-align:left}
+.ref th{background:var(--surface2);font-weight:600}
+@media (max-width:640px){.ref .body{grid-template-columns:1fr}.je td.amt{width:70px}.ev .text{font-size:15px}}
+.beg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:8px}
+.beg .b{background:var(--surface2);border-radius:var(--radius-sm);padding:8px 10px;font-size:14px}
+.beg .b .v{font-family:var(--mono);font-weight:700;float:right}
+.coa{columns:2;column-gap:28px;font-size:14.5px;margin:6px 0 0;padding:0;list-style:none}
+.coa li{break-inside:avoid;padding:2px 0}
+.coa li.h{font-weight:700;color:var(--text2);font-size:13px;margin-top:6px;text-transform:uppercase;letter-spacing:.3px}
+.overview ol{margin:6px 0 0;padding-left:22px}
+.passes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:8px}
+.passes .p{background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px}
+.passes .p b{color:var(--navy)}
+footer{margin-top:28px;color:var(--text3);font-size:12.5px;text-align:center}
+.allsep{margin:26px 0 8px;font-size:12.5px;letter-spacing:.3px;text-transform:uppercase;color:var(--text3);border-top:1px solid var(--border);padding-top:8px}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px 10px;align-items:end;margin-top:8px}
+.form label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--text2)}
+.form input,.form select{width:100%}
+.form .wide{grid-column:1/-1}
+.btn{border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:var(--radius-sm);padding:8px 14px;font-size:14px;font-weight:600}
+.btn.ghost{background:var(--surface);color:var(--navy)}
+.err{color:var(--red);font-size:13.5px;margin-top:6px}
+.builtlist{margin-top:8px}
+.builtlist .row{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-top:1px solid var(--border);font-size:14.5px}
+.builtlist .row:first-child{border-top:0}
+.builtlist .row .date{font-family:var(--mono);font-size:13px;color:var(--text2);min-width:40px}
+.builtlist .row .t{flex:1}
+
+.sel{border:1px solid var(--border2);background:var(--surface);color:var(--text);border-radius:var(--radius-sm);padding:5px 8px;font-size:14px;max-width:100%}
+.sel.small{font-size:12.5px;padding:3px 6px}
+.je.attempt td{padding:4px 6px}
+.je.attempt select{width:100%}
+.je.attempt td.amt{width:124px}
+.fb{margin-top:8px;border-radius:var(--radius-sm);padding:8px 12px;font-size:14px}
+.fb.ok{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green)}
+.fb.no{background:var(--gold-bg);border:1px solid var(--gold-border);color:var(--text)}
+.fb.small{font-size:12.5px;padding:6px 8px;margin-top:6px}
+.lnk:disabled{opacity:.55;cursor:default}
+nav.steps .prog{margin-left:6px;font-size:11px;color:var(--text3);font-family:var(--mono)}
+nav.steps .prog.done{color:var(--green);font-weight:700}
+nav.steps button.active .prog{color:#fff;opacity:.85}
+.drawer summary{cursor:pointer;font-weight:600;color:var(--navy);font-size:14.5px}
+.jl{display:grid;grid-template-columns:62px 1fr 1fr;gap:8px;font-size:13.5px;padding:3px 0;border-top:1px solid var(--border)}
+.jl .date{font-family:var(--mono);color:var(--text2);font-size:12.5px}
+.jl .crl{padding-left:14px;color:var(--text2)}
+.addrow{display:flex;gap:4px;align-items:center;margin-top:6px}
+.addrow select.grow{flex:1;min-width:0}
+.ta .p.mine{cursor:default}
+.ta .p.mine .lab{color:var(--text3)}
+.ta .p.mine.adj .lab{color:var(--gold);font-weight:700}
+.ta .x{border:0;background:none;color:var(--red);font-size:13px;padding:0 0 0 6px;cursor:pointer}
+.ta.okay{border-color:var(--green-border)}
+.balform{margin-top:8px;border-top:1px dashed var(--border);padding-top:6px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.balform .small.muted{width:100%}
+.pill.gray{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.pill.green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+#modepill{font-weight:600}
+@media (max-width:640px){.jl{grid-template-columns:50px 1fr}.jl .crl{grid-column:2}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Sorensen's Cycle Lab <small>The expanded accounting cycle — you work it, the help is underneath. Chapters 3 &amp; 4</small></h1>
+    <div class="controls">
+      <label class="small muted" for="scenario">Company</label>
+      <select id="scenario" aria-label="Choose a company"></select>
+      <span class="pill gold" id="modepill"></span>
+    </div>
+  </header>
+  <nav class="steps" id="steps" aria-label="Steps"></nav>
+  <main id="main"></main>
+  <details class="ref" id="ref">
+    <summary>Reference: the two rules and the three questions (tap to open)</summary>
+    <div class="body">
+      <div>
+        <div><b>Rule 1.</b> Cash is never used in an adjusting entry.</div>
+        <div><b>Rule 2.</b> Every adjusting entry has exactly one income statement account (a revenue or an expense) and one balance sheet account (an asset or a liability).</div>
+        <div style="margin-top:6px"><b>1. What can we recognize?</b> Name the revenue or expense account, and the amount.</div>
+        <div><b>2. Has the cash already moved?</b> Yes: the other account is already on the books — find it, and it comes down (Prepaid ___, Supplies, Deferred Revenue, or the book value of equipment through Accumulated Depreciation). No: add a ___ Payable or Accounts Receivable.</div>
+        <div><b>3. Which side?</b> An expense is a debit. A revenue is a credit. The balance sheet account takes the other side.</div>
+      </div>
+      <div>
+        <table>
+          <tr><th></th><th>Recognizing an EXPENSE</th><th>Recognizing a REVENUE</th></tr>
+          <tr><th>Cash already moved</th><td>Prepaid ___ or Supplies comes down; for equipment, credit Accumulated Depreciation</td><td>Deferred Revenue comes down</td></tr>
+          <tr><th>Cash has not moved yet</th><td>Add a ___ Payable</td><td>Add Accounts Receivable</td></tr>
+        </table>
+        <div class="small muted" style="margin-top:6px">Net income counts revenue when it is earned and expenses when they are incurred. Cash counts money when it moves. Assets and expenses go up with a debit; liabilities, equity and revenue go up with a credit.</div>
+      </div>
+    </div>
+  </details>
+  <footer id="foot"></footer>
+</div>
+
+<script>
+'use strict';
+const VERSION = '0.3.0';
+const STORE_KEY = 'cycle-lab-v2';
+
+// ───────────────────────────── Accounts ─────────────────────────────
+const ACCOUNTS = [
+  ['Cash','asset'],['Accounts Receivable','asset'],['Supplies','asset'],['Prepaid Rent','asset'],['Prepaid Insurance','asset'],
+  ['Equipment','asset'],['Accumulated Depreciation','contra'],
+  ['Accounts Payable','liability'],['Deferred Revenue','liability'],['Wages Payable','liability'],['Interest Payable','liability'],['Notes Payable','liability'],
+  ['Common Stock','equity'],['Retained Earnings','equity'],
+  ['REVENUE','revenue'],
+  ['Wage Expense','expense'],['Advertising Expense','expense'],['Utilities Expense','expense'],['Depreciation Expense','expense'],
+  ['Supplies Expense','expense'],['Rent Expense','expense'],['Insurance Expense','expense'],['Interest Expense','expense'],
+];
+const TYPE_LABEL = {asset:'Assets',contra:'Assets (contra)',liability:'Liabilities',equity:"Stockholders' Equity",revenue:'Revenue',expense:'Expenses'};
+const KIND_WORD = {asset:'An asset',contra:'A contra-asset',liability:'A liability',equity:'An equity account',revenue:'A revenue',expense:'An expense'};
+const SECTION = {asset:'an asset',contra:'a contra-asset under Equipment',liability:'a liability',equity:'equity',revenue:'revenue',expense:'an expense'};
+const DEBIT_NORMAL = new Set(['asset','expense']);
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const money = n => '$' + fmt(n);
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// ───────────────────────────── Scenarios ─────────────────────────────
+const SCENARIOS = [
+{
+  id:'gilda', name:"Gilda's Glorious Guitar Repair", co:"Gilda's", period:'March 2023', month:3, year:2023, endShort:'3/31', endLong:'March 31, 2023',
+  revenueAccount:'Guitar Repair Revenue',
+  intro:"Gilda's began operations this month, so most accounts have no beginning balances. Gilda adjusts her accounts at the end of every month. This is the same company as your practice packet.",
+  beginning:{'Cash':8000,'Supplies':15000,'Common Stock':23000},
+  transactions:[
+    {id:'T1',date:'3/1',type:'service_cash',amount:64200,text:"Gilda's repaired $64,200 of guitars for cash."},
+    {id:'T2',date:'3/1',type:'buy_equipment_cash',amount:2400,lifeMonths:24,what:'a diagnostic machine',text:"Gilda's purchased a diagnostic machine for $2,400 in cash. The machine will be used for 24 months."},
+    {id:'T3',date:'3/1',type:'prepay',prepaid:'Prepaid Rent',amount:18000,months:3,span:'March, April, and May',text:"Gilda's pays $18,000 upfront for March, April, and May rent."},
+    {id:'T4',date:'3/6',type:'cash_in_advance',amount:5400,text:"Gilda's receives $5,400 upfront from a customer and has not yet returned the repaired guitar."},
+    {id:'T5',date:'3/10',type:'service_account',amount:2250,text:"Gilda's performs $2,250 of repair services on account."},
+    {id:'T6',date:'3/15',type:'collect_ar',amount:900,text:"Gilda's collects $900 from customers on account."},
+    {id:'T7',date:'3/21',type:'pay_wages',amount:1800,text:"Gilda's pays $1,800 of wages its employees earned this week."},
+    {id:'T8',date:'3/27',type:'expense_on_account',account:'Advertising Expense',amount:3100,text:"Gilda's ran $3,100 of advertising this month on account; the bill will be paid in April."},
+  ],
+  adjustments:[
+    {id:'A1',type:'adj_depreciation',ref:'T2',monthsUsed:1,text:"The diagnostic machine that Gilda's purchased on March 1 needs to be adjusted. The machine has a useful life of 24 months."},
+    {id:'A2',type:'adj_revenue_unbilled',amount:4500,text:"Gilda's fixed $4,500 worth of guitars on account. The customers have not yet been billed."},
+    {id:'A3',type:'adj_supplies',onHand:250,text:"The supplies account had a balance of $15,000 on March 1. No supplies were purchased this month. A count of supplies on hand at March 31 indicates a balance of $250."},
+    {id:'A4',type:'adj_deferred_earned',ref:'T4',amount:5400,text:"Gilda's finally returns the repaired guitar to the customer from the 3/6 transaction."},
+    {id:'A5',type:'adj_wages_accrued',amount:4800,payDate:null,text:"Payroll indicates that employees have earned $4,800 of wages that were unpaid at March 31."},
+    {id:'A6',type:'adj_prepaid_used',ref:'T3',monthsUsed:1,text:"Gilda's had previously prepaid rent on 3/1. Record the 3/31 adjusting entry."},
+  ],
+},
+{
+  id:'penny', name:"Penny's Perfect Pet Grooming", co:"Penny's", period:'April 2024', month:4, year:2024, endShort:'4/30', endLong:'April 30, 2024',
+  revenueAccount:'Grooming Revenue',
+  intro:"Penny's began operations this month, so most accounts have no beginning balances. Penny adjusts her accounts at the end of every month. This company has a few twists Gilda's does not: supplies are bought during the month, the prepaid is insurance instead of rent, a customer's advance is only partly earned by month end, a bill gets paid off, and an expense is accrued at the end.",
+  beginning:{'Cash':6500,'Supplies':1200,'Common Stock':7700},
+  transactions:[
+    {id:'T1',date:'4/1',type:'service_cash',amount:21400,text:"Penny's groomed $21,400 of pets for cash."},
+    {id:'T2',date:'4/1',type:'buy_equipment_cash',amount:9600,lifeMonths:48,what:'grooming tables and clippers',text:"Penny's bought grooming tables and clippers for $9,600 in cash. They will be used for 48 months."},
+    {id:'T3',date:'4/1',type:'prepay',prepaid:'Prepaid Insurance',amount:7200,months:6,span:'April through September',text:"Penny's paid $7,200 upfront for a six-month insurance policy covering April through September."},
+    {id:'T4',date:'4/4',type:'buy_supplies_account',amount:900,text:"Penny's bought $900 of grooming supplies on account."},
+    {id:'T5',date:'4/8',type:'cash_in_advance',amount:3000,text:"Penny's received $3,000 upfront from a kennel for grooming to be done during April and May."},
+    {id:'T6',date:'4/12',type:'service_account',amount:1650,text:"Penny's groomed $1,650 of pets on account."},
+    {id:'T7',date:'4/18',type:'pay_ap',amount:900,ref:'T4',text:"Penny's paid the $900 it owed for the April 4 supplies."},
+    {id:'T8',date:'4/22',type:'collect_ar',amount:1100,text:"Penny's collected $1,100 from customers on account."},
+    {id:'T9',date:'4/25',type:'pay_wages',amount:2400,text:"Penny's paid $2,400 of wages its employees earned in April."},
+    {id:'T10',date:'4/28',type:'expense_on_account',account:'Advertising Expense',amount:350,text:"Penny's ran $350 of advertising in April on account; the bill will be paid in May."},
+  ],
+  adjustments:[
+    {id:'A1',type:'adj_depreciation',ref:'T2',monthsUsed:1,text:"The grooming tables and clippers bought on April 1 need to be adjusted. They have a useful life of 48 months."},
+    {id:'A2',type:'adj_prepaid_used',ref:'T3',monthsUsed:1,text:"Penny's had prepaid six months of insurance on April 1. Record the April 30 adjusting entry."},
+    {id:'A3',type:'adj_supplies',onHand:650,text:"The supplies account had a balance of $1,200 on April 1, and $900 of supplies were bought on April 4. A count of supplies on hand at April 30 indicates a balance of $650."},
+    {id:'A4',type:'adj_deferred_earned',ref:'T5',amount:1800,text:"Of the $3,000 the kennel paid upfront on April 8, $1,800 of the grooming was done in April. The rest will be done in May."},
+    {id:'A5',type:'adj_wages_accrued',amount:700,payDate:'May 2',text:"Employees earned $700 of wages in the last days of April that will be paid on May 2."},
+    {id:'A6',type:'adj_revenue_unbilled',amount:480,text:"Penny's groomed $480 of pets on April 29 and 30 that have not yet been billed."},
+    {id:'A7',type:'adj_expense_accrued',account:'Utilities Expense',amount:260,text:"Penny's used $260 of electricity in April. The bill will arrive and be paid in May."},
+  ],
+},
+];
+
+// ───────────────────────────── Event templates: the authored reasoning ─────────────────────────────
+// Each template returns {dr, cr, amount, why, cues, accounts, derive?, check?}
+//   cues:     [[regex, what those words tell you]] — matched in the event text and highlighted
+//   accounts: [[account, why this account, up|down]] — "which side" is generated from the account's type and direction
+const T = {
+  service_cash: (e,sc)=>({dr:'Cash',cr:sc.revenueAccount,amount:e.amount,
+    why:'Work is done and cash is in: record the revenue now.',
+    cues:[[/repaired|performed|groomed|services|did .*? of work/i,'the work is finished, so the revenue is earned now'],[/for cash/i,'cash came in now']],
+    accounts:[['Cash','money came in today','up'],[sc.revenueAccount,'the work is done, so it is earned — revenue counts when the work happens, not when the cash does','up']]}),
+  service_account: (e,sc)=>({dr:'Accounts Receivable',cr:sc.revenueAccount,amount:e.amount,
+    why:'Work is done, cash comes later: revenue now, and a receivable now.',
+    cues:[[/repaired|performed|groomed|services/i,'the work is finished, so the revenue is earned now'],[/on account/i,'with a sale, "on account" means the customer pays later — no cash today']],
+    accounts:[['Accounts Receivable','the customer owes us for finished work, and money owed to us is an asset','up'],[sc.revenueAccount,'the work is done, so it is earned now even though no cash has arrived','up']]}),
+  collect_ar: (e,sc)=>({dr:'Cash',cr:'Accounts Receivable',amount:e.amount,
+    why:'Collecting what customers already owed — no new revenue.',
+    cues:[[/collects?|collected/i,'cash came in now'],[/on account/i,'with a collection, "on account" means customers are paying what they already owed — the revenue was recorded when the work was done']],
+    accounts:[['Cash','money came in today','up'],['Accounts Receivable','customers owe us less now that they have paid','down']]}),
+  cash_in_advance: (e,sc)=>({dr:'Cash',cr:'Deferred Revenue',amount:e.amount,
+    why:'Cash came in before the work: we owe the work, so it is a liability.',
+    cues:[[/receives?d? .*?upfront|received .*?upfront|upfront/i,'cash came in now, before the work'],[/has not yet|not yet (?:been )?done|to be done|has not yet returned/i,'the work is not done, so nothing is earned yet']],
+    accounts:[['Cash','money came in today','up'],['Deferred Revenue','we owe the customer the work, and something we owe is a liability — it becomes revenue only when the work is done','up']]}),
+  buy_equipment_cash: (e,sc)=>({dr:'Equipment',cr:'Cash',amount:e.amount,
+    why:'Bought an asset — one asset traded for another. No expense yet.',
+    cues:[[/purchased|bought/i,'we now own something'],[/in cash|for cash/i,'cash went out now'],[/(\d+) months/i,'it will be used for many months, so the cost is not used up today — it is an asset, and depreciation will spread the cost over those months']],
+    accounts:[['Equipment','something we own that will be used for '+e.lifeMonths+' months — an asset, not an expense','up'],['Cash','money went out today','down']]}),
+  prepay: (e,sc)=>({dr:e.prepaid,cr:'Cash',amount:e.amount,
+    why:'Paid ahead for '+e.months+' months: an asset until it gets used.',
+    cues:[[/upfront|in advance|prepaid/i,'paid ahead — the benefit has not been used yet'],[/pays|paid/i,'cash went out now'],[new RegExp(e.span.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'),'this covers '+e.months+' months, so one month gets used up at each month end']],
+    accounts:[[e.prepaid,'the right to use '+e.prepaid.replace('Prepaid ','').toLowerCase()+' for the next '+e.months+' months is an asset; each month that gets used up becomes '+e.prepaid.replace('Prepaid ','')+' Expense in an adjusting entry','up'],['Cash','money went out today','down']]}),
+  buy_supplies_cash: (e,sc)=>({dr:'Supplies',cr:'Cash',amount:e.amount,
+    why:'Supplies are an asset until they are used.',
+    cues:[[/supplies/i,'supplies sit on the shelf until used — an asset for now'],[/for cash|in cash/i,'cash went out now']],
+    accounts:[['Supplies','supplies on the shelf are an asset; the part that gets used becomes Supplies Expense in an adjusting entry','up'],['Cash','money went out today','down']]}),
+  buy_supplies_account: (e,sc)=>({dr:'Supplies',cr:'Accounts Payable',amount:e.amount,
+    why:'Supplies are an asset until used; the bill is owed, so Accounts Payable.',
+    cues:[[/supplies/i,'supplies sit on the shelf until used — an asset for now'],[/on account/i,'with a purchase, "on account" means we pay the supplier later — no cash today']],
+    accounts:[['Supplies','supplies on the shelf are an asset; nothing is an expense until they are used','up'],['Accounts Payable','we owe the supplier, and something we owe is a liability','up']]}),
+  pay_wages: (e,sc)=>({dr:'Wage Expense',cr:'Cash',amount:e.amount,
+    why:'These wages were earned by workers and paid this month: expense now.',
+    cues:[[/earned (?:this|in|during) \w+/i,'the work was done this period, so the cost is incurred now'],[/pays|paid/i,'cash went out now']],
+    accounts:[['Wage Expense','employees already did this work this period, so the cost belongs to this period','up'],['Cash','money went out today','down']]}),
+  expense_on_account: (e,sc)=>({dr:e.account,cr:'Accounts Payable',amount:e.amount,
+    why:'The benefit happened this month, we pay later: expense now, and a payable now.',
+    cues:[[/ran .*?(?:this month|in \w+)|used .*?(?:this month|in \w+)/i,'the benefit happened this period, so the cost is incurred now'],[/on account|bill will be paid/i,'we have not paid — the bill is owed']],
+    accounts:[[e.account,'it already happened this period, so the cost belongs to this period','up'],['Accounts Payable','we owe the bill, and something we owe is a liability; paying it later will not be a second expense','up']]}),
+  expense_cash: (e,sc)=>({dr:e.account,cr:'Cash',amount:e.amount,
+    why:'Benefit happened now and cash paid now: expense now.',
+    cues:[[/ran this month|was used this month|this month/i,'the benefit happened this period, so the cost is incurred now'],[/paid|pays/i,'cash went out now']],
+    accounts:[[e.account,'it happened this period, so the cost belongs to this period','up'],['Cash','money went out today','down']]}),
+  pay_ap: (e,sc)=>({dr:'Accounts Payable',cr:'Cash',amount:e.amount,
+    why:'Paying a bill that was already recorded — no new expense.',
+    cues:[[/paid|pays/i,'cash went out now'],[/owed|on account/i,'this was recorded when the bill came — paying it now is not a new expense or a new purchase']],
+    accounts:[['Accounts Payable','we owe the supplier less now that we have paid','down'],['Cash','money went out today','down']]}),
+  issue_stock: (e,sc)=>({dr:'Cash',cr:'Common Stock',amount:e.amount,
+    why:'Owners put money in: cash up, Common Stock up.',
+    cues:[[/issued|owners|stock/i,'the owners invested — this is not revenue, nothing was earned'],[/cash/i,'cash came in now']],
+    accounts:[['Cash','money came in today','up'],['Common Stock','the owners\' investment in the business is equity','up']]}),
+
+  adj_depreciation: (e,sc,ctx)=>{const eq=ctx.find(e.ref);const per=eq.amount/eq.lifeMonths;const amt=per*(e.monthsUsed||1);
+    return {dr:'Depreciation Expense',cr:'Accumulated Depreciation',amount:amt,
+    why:money(eq.amount)+' cost ÷ '+eq.lifeMonths+' months of life = '+money(per)+' of use this month.',
+    cues:[[/useful life of \d+ months|\d+ months/i,'the cost is spread over the life — one month of it is used up at each month end'],[/purchased on|bought on/i,'the cash already moved, on that date, into Equipment']],
+    accounts:[['Depreciation Expense','this month used up one of the '+eq.lifeMonths+' months the equipment will give us, so that share of the cost is an expense now','up'],['Accumulated Depreciation','the equipment\'s book value comes down — not by changing Equipment itself, but through this contra-asset that sits under it','up']],
+    derive:'Cost '+money(eq.amount)+' ÷ '+eq.lifeMonths+' months = '+money(per)+' per month × '+(e.monthsUsed||1)+' month = '+money(amt),
+    check:'Depreciation Expense (income statement) + Accumulated Depreciation (balance sheet). No Cash.'};},
+  adj_prepaid_used: (e,sc,ctx)=>{const p=ctx.find(e.ref);const per=p.amount/p.months;const amt=per*(e.monthsUsed||1);const exp=p.prepaid.replace('Prepaid ','')+' Expense';
+    return {dr:exp,cr:p.prepaid,amount:amt,
+    why:'One of the '+p.months+' months is used up: '+money(p.amount)+' ÷ '+p.months+' = '+money(amt)+'.',
+    cues:[[/prepaid|paid .*?upfront/i,'the cash already moved, when it was paid ahead — the asset is on the books'],[/record the [\d\/]+|record the \w+ \d+|adjusting entry/i,'one month has now passed, so one month of the asset is used up']],
+    accounts:[[exp,'one month of the '+p.months+' months paid for ('+p.span+') has been used, so that month\'s cost is an expense now','up'],[p.prepaid,'the asset is used up by one month, so it comes down','down']],
+    derive:money(p.amount)+' paid on '+p.date+' ÷ '+p.months+' months = '+money(per)+' per month × '+(e.monthsUsed||1)+' month = '+money(amt),
+    check:exp+' (income statement) + '+p.prepaid+' (balance sheet). No Cash.'};},
+  adj_supplies: (e,sc,ctx)=>{const beg=ctx.beginning('Supplies');const bought=ctx.purchases('Supplies');const used=beg+bought-e.onHand;
+    return {dr:'Supplies Expense',cr:'Supplies',amount:used,
+    why:'Used = '+money(beg)+' beginning + '+money(bought)+' purchased – '+money(e.onHand)+' still on hand = '+money(used)+'.',
+    cues:[[/on hand/i,'the count tells you what is left — everything else was used up'],[/balance of \$[\d,]+ on|bought on|bought during|purchased/i,'what was available: the beginning balance plus anything bought during the month']],
+    accounts:[['Supplies Expense','the supplies that were used up this month are a cost of this month','up'],['Supplies','the asset comes down to the '+money(e.onHand)+' actually on the shelf','down']],
+    derive:'Beginning '+money(beg)+' + purchased '+money(bought)+' = '+money(beg+bought)+' available; '+money(beg+bought)+' – '+money(e.onHand)+' on hand = '+money(used)+' used',
+    check:'Supplies Expense (income statement) + Supplies (balance sheet). No Cash.'};},
+  adj_deferred_earned: (e,sc,ctx)=>{const adv=ctx.find(e.ref);const all=e.amount>=adv.amount;
+    return {dr:'Deferred Revenue',cr:sc.revenueAccount,amount:e.amount,
+    why:all?'The work is now done, so the '+money(e.amount)+' of work we owed becomes revenue.':money(e.amount)+' of the '+money(adv.amount)+' is now earned; the rest stays owed.',
+    cues:[[/returns the repaired|was done|is now done|work was done|now done/i,'the work (or this part of it) is finished, so it is earned now'],[/from the [\d\/]+ transaction|paid upfront on|received upfront on|paid on \w+ \d+/i,'that cash came in earlier and was recorded as Deferred Revenue — the work was owed']],
+    accounts:[[sc.revenueAccount,'this much of the work is done, so it is earned now','up'],['Deferred Revenue','we owe the customer less work than before, so the liability comes down','down']],
+    derive:all?'The whole advance of '+money(adv.amount)+' (received '+adv.date+') is earned, so Deferred Revenue goes to zero':money(adv.amount)+' received '+adv.date+' – '+money(e.amount)+' earned this month = '+money(adv.amount-e.amount)+' still owed in Deferred Revenue',
+    check:sc.revenueAccount+' (income statement) + Deferred Revenue (balance sheet). No Cash.'};},
+  adj_revenue_unbilled: (e,sc)=>({dr:'Accounts Receivable',cr:sc.revenueAccount,amount:e.amount,
+    why:'The work is done, so the revenue is earned now — even though no bill and no cash yet.',
+    cues:[[/fixed|groomed|did .*? of work|performed|repaired/i,'the work is finished, so it is earned now'],[/not yet been billed|not yet billed|on account/i,'no bill and no cash yet — but earned is earned, so we record the customer\'s debt to us']],
+    accounts:[['Accounts Receivable','the customer owes us for finished work, and money owed to us is an asset — this is the only adjusting entry that adds to Accounts Receivable','up'],[sc.revenueAccount,'the work is done, so it is earned now','up']],
+    check:sc.revenueAccount+' (income statement) + Accounts Receivable (balance sheet). No Cash.'}),
+  adj_wages_accrued: (e,sc)=>({dr:'Wage Expense',cr:'Wages Payable',amount:e.amount,
+    why:'Employees earned it this month, so it is an expense now; unpaid, so we owe it.',
+    cues:[[/have earned|earned/i,'the work was done this period, so the cost is incurred now'],[/unpaid|will be paid|not yet paid|next month/i,'no cash has moved — we owe this to the employees']],
+    accounts:[['Wage Expense','employees did this work this period, so the cost belongs to this period','up'],['Wages Payable','we owe employees this money, and something we owe is a liability','up']],
+    check:'Wage Expense (income statement) + Wages Payable (balance sheet). No Cash.'}),
+  adj_expense_accrued: (e,sc)=>({dr:e.account,cr:'Accounts Payable',amount:e.amount,
+    why:'The cost was incurred this month; unpaid, so we owe it.',
+    cues:[[/used .*?(?:in \w+|this month)/i,'it was used this period, so the cost is incurred now'],[/bill will arrive|be paid (?:in|next)/i,'no bill has been paid — we owe the supplier']],
+    accounts:[[e.account,'the service was used this period, so the cost belongs to this period','up'],['Accounts Payable','we owe the supplier, and something we owe is a liability','up']],
+    check:e.account+' (income statement) + Accounts Payable (balance sheet). No Cash.'}),
+};
+
+// ───────────────────────────── Engine ─────────────────────────────
+function compute(sc){
+  const coa = ACCOUNTS.map(([n,t])=>[n==='REVENUE'?sc.revenueAccount:n,t]);
+  const typeOf = Object.fromEntries(coa);
+  const ledger = {};
+  const post = (acct, side, amount, label, eid, kind) => { (ledger[acct] ||= []).push({side,amount,label,eid,kind}); };
+  for (const [name, amt] of Object.entries(sc.beginning)) if (amt) post(name, DEBIT_NORMAL.has(typeOf[name])?'L':'R', amt, 'Beg.', null, 'beg');
+  const find = id => sc.transactions.find(t=>t.id===id) || sc.adjustments.find(a=>a.id===id);
+  const purchases = acct => sc.transactions.filter(t=>(t.type==='buy_supplies_cash'||t.type==='buy_supplies_account')&&acct==='Supplies').reduce((s,t)=>s+t.amount,0);
+  const beginning = acct => sc.beginning[acct]||0;
+  const ctx = {find, purchases, beginning};
+  const entries = [];
+  sc.transactions.forEach(t=>{ const r=T[t.type](t,sc,ctx); entries.push({...r, id:t.id, date:t.date, kind:'txn', label:t.date, ev:t});
+    post(r.dr,'L',r.amount,t.date,t.id,'txn'); post(r.cr,'R',r.amount,t.date,t.id,'txn'); });
+  sc.adjustments.forEach((a,i)=>{ const r=T[a.type](a,sc,ctx); const label='AJE '+(i+1); entries.push({...r, id:a.id, date:sc.endShort, kind:'adj', label, n:i+1, ev:a});
+    post(r.dr,'L',r.amount,label,a.id,'adj'); post(r.cr,'R',r.amount,label,a.id,'adj'); });
+  const balance = (acct, upTo)=>{ let d=0,c=0; for(const p of (ledger[acct]||[])){ if(upTo==='txn'&&p.kind==='adj') continue; if(p.side==='L')d+=p.amount; else c+=p.amount;} return d-c; };
+  const active = coa.filter(([n])=>ledger[n]&&ledger[n].length).map(([n,t])=>({name:n,type:t}));
+  const tb = active.map(a=>{const b=balance(a.name,'adj'); return {name:a.name,type:a.type,debit:b>0?b:0,credit:b<0?-b:0,zero:b===0};});
+  const totals = {debit:tb.reduce((s,r)=>s+r.debit,0), credit:tb.reduce((s,r)=>s+r.credit,0)};
+  return {coa, typeOf, ledger, entries, balance, active, tb, totals, ctx};
+}
+
+// Effect of one entry on the accounting equation, derived from account types
+function equationEffect(e, R){
+  const d = {A:0,L:0,SE:0}; let viaNI=false;
+  const apply = (acct, isDebit, amt) => { const t=R.typeOf[acct];
+    if (t==='asset' || t==='contra') d.A += isDebit?amt:-amt;
+    else if (t==='liability') d.L += isDebit?-amt:amt;
+    else if (t==='equity') d.SE += isDebit?-amt:amt;
+    else if (t==='revenue' || t==='expense') { d.SE += isDebit?-amt:amt; viaNI=true; } };
+  apply(e.dr,true,e.amount); apply(e.cr,false,e.amount);
+  return {...d, viaNI, balanced: Math.abs(d.A - (d.L + d.SE)) < 0.5};
+}
+const signed = n => n===0 ? '0' : (n>0?'+':'–') + fmt(Math.abs(n));
+// "Which side" sentence generated from the account's type and the direction it moved
+function sideText(acct, isDebit, dir, R){
+  const t=R.typeOf[acct]; const normalDebit=DEBIT_NORMAL.has(t); const kind=KIND_WORD[t];
+  const up = dir==='up';
+  const where = (up===normalDebit) ? 'left (debit)' : 'right (credit)';
+  const verb = up ? 'goes up' : 'comes down';
+  const rule = t==='contra' ? 'A contra-asset grows on the credit side, the opposite of the asset it reduces' : `${kind} ${up?'increases':'decreases'} on the ${where} side`;
+  return `${acct} ${verb}. ${rule}, so ${acct} is ${isDebit?'debited':'credited'}.`;
+}
+
+// ───────────────────────────── Common questions at each step ─────────────────────────────
+const FAQ = {
+  setup:[["Why do a few accounts already have balances?","Those balances were there when the month started — the owners' investment (Common Stock) and what it bought (Cash and Supplies). Every T-account starts from these; the new month's entries are added on top."],
+         ["What is the chart of accounts for?","It is the list of the only account names you are allowed to use. Every entry in this problem uses names from this list, spelled exactly this way."]],
+  txns:[["What does \"on account\" mean? It depends on the verb.","With a sale or a purchase, \"on account\" means no cash today — a receivable or a payable is created. With a collection or a payment, \"on account\" means cash is moving now to settle something recorded earlier. Open the reasoning on any entry and the highlighted words show which one it is."],
+        ["Is paying ahead an expense?","No. Paying for rent, insurance, or supplies before using them buys an asset — the right to use the thing later. It becomes an expense only as it gets used, which is what the adjusting entries at the end of the month record."],
+        ["When is work \"done\" enough to be revenue?","When the service has been performed. Getting paid is not the test: cash before the work is Deferred Revenue (a liability), and work before the cash is revenue plus Accounts Receivable."],
+        ["The test says things like \"incurred advertising on account\" or \"pays for weekly wages they incurred.\" Same ideas?","Yes. \"Incurred\" means the cost happened — the ad ran, the employees worked. \"On account\" after an expense means the bill is not paid yet, so it is the expense plus Accounts Payable. Wages \"incurred\" and paid the same week are the expense plus Cash. The words change; the two questions do not."]],
+  journal:[["Which line goes first?","The debit line, flush left, then the credit line indented underneath. Both lines carry the same amount, and the date sits on the first line."],
+           ["Why does every entry have the same amount on both sides?","Every transaction changes two things by the same amount — that is what keeps the accounting equation balanced. If your debit and credit differ, one of the amounts is wrong."]],
+  post:[["Why no totals yet?","Because the adjusting entries at the end of the month will add more postings to many of these accounts. Totaling now would mean totaling twice. Balances are calculated in Step 7, after the adjustments are posted."],
+        ["Which side does a credit go on?","The right side, always, in every account. The left side is for debits. Whether a posting makes the account bigger or smaller depends on the account's normal side, but which side it is written on never changes."],
+        ["Why label each posting with its date?","So you can find your way back. On the test, a labeled posting earns credit even when an amount is wrong, and the label is how you check your own work against the journal."]],
+  events:[["How do I tell an adjusting entry from an everyday transaction?","Nothing new happened on the last day — no customer walked in and no check was written. Time passed, or a count was taken, and something already recorded needs catching up. If the event says cash moved today, it is an everyday transaction, not an adjustment."],
+          ["What if I cannot tell whether the cash already moved?","Look for the earlier transaction. Prepaid rent, supplies, equipment and customer advances were all recorded when their cash moved — so the cash moved. Unpaid wages, unbilled work and unpaid bills have no earlier entry — so it has not."]],
+  ajes:[["Why is Cash never in an adjusting entry?","Because an adjusting entry fixes timing, not cash. If cash moved, it was recorded on the day it moved. The adjustment only recognizes what has been earned or used up since then."],
+        ["Why one income statement account and one balance sheet account?","Every adjustment recognizes a revenue or an expense (income statement) and corrects the asset or liability it belongs to (balance sheet). An entry with two balance sheet accounts or two income statement accounts is not an adjustment — something is mislabeled."]],
+  balance:[["Do the beginning balances count?","Yes. A beginning balance is the first posting in the account; the month's postings are added to it. Dropping one is the most common reason a trial balance does not tie."],
+           ["My balance ended up on the \"wrong\" side. Is that possible?","It is unusual in this problem, so re-check the postings. Assets and expenses normally end with debit balances; liabilities, equity and revenue end with credit balances."],
+           ["What does a zero balance mean?","The whole amount was used up or earned. Deferred Revenue goes to zero when all the owed work is done. The account still exists and still gets a line on the trial balance."]],
+  tb:[["It does not tie. Where do I look first?","Three usual suspects, in order: a beginning balance left out of a total, an adjustment posted to the wrong side of its account, and the supplies arithmetic. Then check that each journal entry has equal debits and credits."],
+      ["Does a zero balance get a line?","Yes — list the account with 0 in its normal column. Leaving it off is not wrong on the test, but listing it shows you know the account exists."],
+      ["Is the trial balance a financial statement?","No. It is a check that debits equal credits after everything is posted. The income statement and balance sheet are built from it — that is the next part of the chapter."]],
+  build:[["What can I build?","Any month for a service company, using the same kinds of events the two worked companies use. Add transactions, then adjusting events; every other step fills in from what you built, with the same reasoning on every entry."],
+         ["Does the app check my company?","It records what you add correctly and shows the reasoning, so you can check your own paper work against it. It cannot tell whether the company you invented makes sense — that part is yours."]],
+};
+
+
+FAQ.journal = [...FAQ.txns, ...FAQ.journal]; FAQ.ajes = [...FAQ.events, ...FAQ.ajes];
+// ───────────────────────────── State ─────────────────────────────
+const STEPS = [
+  {id:'setup',   n:1, label:'Setup',                  part:'',       goal:'Know the company, its accounts, and what is already on the books before the month starts.'},
+  {id:'journal', n:2, label:'Journal entries',        part:'Part 1', goal:'Record each transaction: choose the debit account, the credit account, and the amount.'},
+  {id:'post',    n:3, label:'Post to T-accounts',     part:'Part 2', goal:'Move every journal line to the left or right side of its account. No totals yet.'},
+  {id:'ajes',    n:4, label:'Adjusting entries',      part:'Part 3', goal:'At the end of the period, record what is earned or used up but not yet on the books — one income statement account, one balance sheet account, never Cash.'},
+  {id:'balance', n:5, label:'Post & balance',         part:'Part 4', goal:'Post the adjustments with their AJE labels, then find the ending balance of every account.'},
+  {id:'tb',      n:6, label:'Adjusted trial balance', part:'Part 5', goal:'Put every ending balance in its column. The two columns must tie.'},
+];
+const CUSTOM_ID = 'mine';
+const DEFAULT_MODE = {gilda:'guided', penny:'own', mine:'author'};
+const MODE_LABEL = {guided:'Guided — hints before you try', own:'On your own — guidance after your first try', author:'Author — you built it, so everything shows'};
+let state = { scenario: SCENARIOS[0].id, step:'setup', custom:null, work:{}, modes:{} };
+let R = null;
+function load(){ try { const s = JSON.parse(localStorage.getItem(STORE_KEY)||'null'); if (s && typeof s==='object') state = {...state, ...s}; } catch(e){} }
+function save(){ try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e){} }
+function blankCustom(){ return {name:'My Company', revenueAccount:'Service Revenue', month:5, year:2024, beginning:{Cash:5000,Supplies:800}, transactions:[], adjustments:[]}; }
+function customScenario(){
+  const c = state.custom || blankCustom();
+  const cs = (c.beginning.Cash||0)+(c.beginning.Supplies||0);
+  const m = c.month, y = c.year, last = new Date(y, m, 0).getDate();
+  return {id:CUSTOM_ID, name:c.name||'My Company', co:c.name||'My Company', period:MONTHS[m-1]+' '+y, month:m, year:y, endShort:m+'/'+last, endLong:MONTHS[m-1]+' '+last+', '+y,
+    revenueAccount:c.revenueAccount||'Service Revenue', custom:true,
+    intro:'This is the company you are building. Add transactions and adjusting events here in Setup. While you are the author, every other step shows the worked solution; switch to "Solve it myself" when you want to work it as a problem.',
+    beginning:{'Cash':c.beginning.Cash||0,'Supplies':c.beginning.Supplies||0,'Common Stock':cs},
+    transactions:c.transactions, adjustments:c.adjustments};
+}
+const allScenarios = () => [...SCENARIOS, customScenario()];
+const sc = () => allScenarios().find(s=>s.id===state.scenario) || SCENARIOS[0];
+const $ = sel => document.querySelector(sel);
+function W(){ return state.work[state.scenario] ||= {entries:{}, post:{}, postStatus:{}, bal:{}, tb:{}, tbResult:null}; }
+function mode(){ return state.modes[state.scenario] || DEFAULT_MODE[state.scenario] || 'guided'; }
+function setMode(m){ state.modes[state.scenario]=m; render(); save(); }
+function resetWork(id){ delete state.work[id]; }
+function rec(id){ return W().entries[id] ||= {attempts:0, status:null, sel:{}, hint:0, lands:false, hintBefore:false}; }
+const isDone = id => { const r=W().entries[id]; return !!(r && r.status); };
+
+function setScenario(id){ state.scenario=id; if (id===CUSTOM_ID) state.step='setup'; R=compute(sc()); render(); save(); window.scrollTo({top:0}); }
+function setStep(id){ state.step=id; render(); save(); window.scrollTo({top:0}); }
+function go(step, selector){
+  if (state.step!==step && state.step!=='all') setStep(step);
+  setTimeout(()=>{ const els=document.querySelectorAll(selector); if(!els.length) return;
+    els[0].scrollIntoView({behavior:'smooth',block:'center'});
+    els.forEach(el=>{ el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }); }, 60);
+}
+const acctBtn = (name, step) => `<button type="button" class="acct" onclick="go('${step||'balance'}','#ta-${slug(name)}')" title="See the ${esc(name)} T-account">${esc(name)}</button>`;
+
+// ───────────────────────────── Hint ladder, probes, amount candidates ─────────────────────────────
+function hintLevelAvailable(r){ const m=mode(); if (m!=='own') return 3; return Math.min(3, r.attempts); }
+function answerAvailable(r){ const m=mode(); return m==='author' || (m==='guided' ? r.attempts>=1 : r.attempts>=3); }
+function chartFor(){ const skip=new Set(['Interest Payable','Notes Payable','Interest Expense','Retained Earnings']); return R.coa.filter(([n])=>!skip.has(n)||R.ledger[n]); }
+function acctSelect(eid, key, value){
+  const groups={}; chartFor().forEach(([n,t])=>{ (groups[t] ||= []).push(n); });
+  const og = Object.entries(groups).map(([t,names])=>`<optgroup label="${TYPE_LABEL[t]}">${names.map(n=>`<option value="${esc(n)}" ${n===value?'selected':''}>${esc(n)}</option>`).join('')}</optgroup>`).join('');
+  return `<select class="sel" onchange="setSel('${eid}','${key}',this.value)"><option value="">— choose account —</option>${og}</select>`;
+}
+function amtSelect(eid, key, value, options){
+  return `<select class="sel amt" onchange="setSel('${eid}','${key}',this.value)"><option value="">— amount —</option>${options.map(v=>`<option value="${v}" ${String(v)===String(value)?'selected':''}>${fmt(v)}</option>`).join('')}</select>`;
+}
+function amountOptions(e){
+  const ev=e.ev, set=new Set([Math.round(e.amount)]);
+  const add=v=>{ if (v>0 && Math.abs(Math.round(v)-v)<1e-9) set.add(Math.round(v)); };
+  switch(ev.type){
+    case 'buy_equipment_cash': add(ev.amount/ev.lifeMonths); if (ev.lifeMonths!==12) add(ev.amount/12); break;
+    case 'prepay': add(ev.amount/ev.months); add(ev.amount-ev.amount/ev.months); break;
+    case 'adj_depreciation': { const q=R.ctx.find(ev.ref); add(q.amount); if (q.lifeMonths!==12) add(q.amount/12); add(q.amount-e.amount); } break;
+    case 'adj_prepaid_used': { const p=R.ctx.find(ev.ref); add(p.amount); add(p.amount-e.amount); if (p.months!==12) add(p.amount/12); } break;
+    case 'adj_supplies': { const b=R.ctx.beginning('Supplies'), p=R.ctx.purchases('Supplies'); add(ev.onHand); add(b+p); if (p) add(b); } break;
+    case 'adj_deferred_earned': { const a=R.ctx.find(ev.ref); add(a.amount); add(a.amount-e.amount); } break;
+  }
+  const others = R.entries.filter(x=>x.id!==e.id).map(x=>Math.round(x.amount)).sort((a,b)=>Math.abs(a-e.amount)-Math.abs(b-e.amount));
+  for (const v of others){ if (set.size>=4) break; set.add(v); }
+  return [...set].sort((a,b)=>a-b);
+}
+function amountDiag(e, chosen){
+  const ev=e.ev, s=sc();
+  switch(ev.type){
+    case 'prepay': if (chosen===Math.round(ev.amount/ev.months)) return 'That is one month. Today the whole payment becomes the asset; one month of it becomes expense at the end of the month.'; break;
+    case 'buy_equipment_cash': if (chosen!==e.amount) return 'Today the whole cost goes into Equipment; the monthly share comes out through depreciation at the end of the month.'; break;
+    case 'adj_depreciation': { const q=R.ctx.find(ev.ref); if (chosen===q.amount) return 'That is the whole cost. Spread it over the '+q.lifeMonths+'-month life — this month used up one month of it.'; if (q.lifeMonths!==12 && chosen===Math.round(q.amount/12)) return 'The life is '+q.lifeMonths+' months, not 12.'; if (chosen===q.amount-e.amount) return 'That is what is left after this month, not what this month used.'; break; }
+    case 'adj_prepaid_used': { const p=R.ctx.find(ev.ref); if (chosen===p.amount) return 'That is the whole payment. Only one of the '+p.months+' months is used up.'; if (chosen===p.amount-e.amount) return 'That is what is still prepaid after this month, not what this month used.'; break; }
+    case 'adj_supplies': { const b=R.ctx.beginning('Supplies'), p=R.ctx.purchases('Supplies'); if (chosen===ev.onHand) return 'That is what is still on the shelf. The expense is what was used: what was available minus what is on hand.'; if (chosen===b+p) return 'That is everything that was available. Subtract what is still on hand.'; if (p && chosen===b) return 'That is only the beginning balance. Add what was bought, then subtract what is on hand.'; break; }
+    case 'adj_deferred_earned': { const a=R.ctx.find(ev.ref); if (chosen===a.amount && e.amount!==a.amount) return 'That is the whole advance. Only the part of the work that is done is earned.'; if (chosen===a.amount-e.amount) return 'That is the part still owed, not the part earned.'; break; }
+  }
+  return 'Re-read the event for the amount; it is stated or can be worked out from what is stated.';
+}
+function probeFor(acct, e){
+  const s=sc();
+  if (acct===s.revenueAccount) return 'is the work done? If it is, what was earned, and which account records what a business earns?';
+  if (/Expense$/.test(acct)) return 'did the benefit happen this period — the ad ran, the employees worked, the month got used up? If so the cost is incurred now. Which expense is it?';
+  switch(acct){
+    case 'Cash': return 'did money actually move today?';
+    case 'Deferred Revenue': return 'the cash is in, but is the work done? If not, we owe the customer the work. What kind of account is something we owe?';
+    case 'Accounts Receivable': return 'no cash moved, but the work is done. Which account shows that a customer owes us?';
+    case 'Accounts Payable': return 'no cash moved, but we owe a supplier. Which account shows what we owe a supplier?';
+    case 'Wages Payable': return 'the work was done but nothing has been paid. Which account shows what we owe employees?';
+    case 'Prepaid Rent': case 'Prepaid Insurance': return 'nothing has been used up yet. Paying ahead buys the right to use something later — what kind of account is a right we own, and which one is it?';
+    case 'Supplies': return 'supplies on the shelf have not been used yet. Are they an expense or an asset?';
+    case 'Equipment': return 'this will be used for many months. Is its cost used up today, or is it something we own?';
+    case 'Accumulated Depreciation': return "Equipment's book value comes down, but not by changing Equipment itself. Which account sits under Equipment and reduces it?";
+    case 'Common Stock': return 'the owners put money in. Is that revenue, or ownership?';
+  }
+  return 'which kind of account changed — asset, liability, equity, revenue or expense?';
+}
+function checkEntry(e, sel){
+  if (!sel.dr || !sel.cr || !sel.drAmt || !sel.crAmt) return {ok:false, incomplete:true, msg:'Choose both accounts and both amounts, then check.'};
+  const drA=+sel.drAmt, crA=+sel.crAmt;
+  const accOK = sel.dr===e.dr && sel.cr===e.cr, swapped = sel.dr===e.cr && sel.cr===e.dr;
+  const amtOK = drA===Math.round(e.amount) && crA===Math.round(e.amount);
+  if (accOK && amtOK) return {ok:true};
+  const parts=[];
+  if (sel.dr===sel.cr) parts.push('The same account is on both lines. An entry moves two different accounts.');
+  else if (swapped) parts.push('Both accounts are right, but each is on the wrong side. Which account went up? Assets and expenses go up with a debit (left); liabilities, equity and revenue go up with a credit (right).');
+  else if (!accOK){
+    if (e.kind==='adj' && (sel.dr==='Cash'||sel.cr==='Cash')) parts.push('Rule 1: Cash is never in an adjusting entry — the cash either moved earlier or has not moved yet.');
+    const drRight = sel.dr===e.dr, crRight = sel.cr===e.cr;
+    if (drRight || crRight){ const right = drRight?e.dr:e.cr, missing = drRight?e.cr:e.dr; parts.push(`${right} is right. For the ${drRight?'credit':'debit'} line, ask: ${probeFor(missing, e)}`); }
+    else if (sel.cr===e.dr || sel.dr===e.cr){ const right = sel.cr===e.dr ? e.dr : e.cr; parts.push(`${right} belongs in this entry, but on the other side. Then ask about the other account: ${probeFor(right===e.dr?e.cr:e.dr, e)}`); }
+    else parts.push(e.kind==='adj' ? 'Neither account is right yet. Start with question 1: what can we recognize — which revenue or expense? Then question 2: has the cash already moved?' : 'Neither account is right yet. Start with the two questions: is cash moving now? Is the work or the benefit happening now, or later?');
+  }
+  if (!amtOK){ if (drA!==crA) parts.push('The debit and the credit must be the same amount.'); else if (accOK || swapped) parts.push(amountDiag(e, drA)); }
+  return {ok:false, msg: parts.join(' ')};
+}
+function setSel(eid, key, value){ rec(eid).sel[key]=value; save(); }
+function checkEntryUI(eid){
+  const e=R.entries.find(x=>x.id===eid); const r=rec(eid);
+  const res=checkEntry(e, r.sel);
+  if (res.incomplete){ r.last={ok:false,msg:res.msg}; render(); return; }
+  r.attempts++;
+  if (res.ok){ r.status='correct'; r.firstTry = r.attempts===1 && !r.hintBefore; r.last={ok:true,msg:(r.attempts===1?'Correct on the first try.':'Correct on try '+r.attempts+'.')}; }
+  else r.last={ok:false,msg:res.msg};
+  render(); save();
+  setTimeout(()=>{ const el=document.getElementById('fb-'+eid); if (el) el.scrollIntoView({block:'nearest'}); }, 30);
+}
+function showAnswer(eid){ const r=rec(eid); if (!answerAvailable(r)) return; r.status='shown'; r.last={ok:true,msg:'Shown after '+r.attempts+(r.attempts===1?' try.':' tries.')}; render(); save(); }
+function openHint(eid, level){ const r=rec(eid); if (level>hintLevelAvailable(r)) return; r.hint = (r.hint===level?0:level); if (!r.status && r.hint>0 && r.attempts===0) r.hintBefore=true; render(); save(); }
+function toggleLands(eid){ const r=rec(eid); r.lands=!r.lands; render(); save(); }
+
+// ───────────────────────────── Shared pieces: cue markup and reasoning blocks ─────────────────────────────
+function cueMarkup(e){
+  const text = e.ev.text; const found = [];
+  (e.cues||[]).forEach(([rx, means]) => { const m = rx.exec(text); if (m && m[0].trim()) found.push({start:m.index, end:m.index+m[0].length, means}); });
+  found.sort((a,b)=>a.start-b.start);
+  let html='', pos=0, n=0; const legend=[];
+  for (const f of found){ if (f.start<pos) continue; n++; html += esc(text.slice(pos,f.start)) + `<mark class="cue c${n}">${esc(text.slice(f.start,f.end))}</mark>`; legend.push({n, phrase:text.slice(f.start,f.end), means:f.means}); pos=f.end; }
+  html += esc(text.slice(pos));
+  return {html, legend};
+}
+function wordsBlock(e){ const {legend}=cueMarkup(e); return legend.length ? `<div class="q">What the words tell you</div><ul>${legend.map(l=>`<li><span class="cuen c${l.n}">${l.n}</span><b>“${esc(l.phrase)}”</b> — ${l.means}</li>`).join('')}</ul>` : ''; }
+function accountsBlock(e){ return `<div class="q">Which accounts, and why</div><ul>${e.accounts.map(([a,why])=>`<li><b>${esc(a)}</b> — ${why}.</li>`).join('')}</ul>`; }
+function sidesBlock(e){ return `<div class="q">Which side</div><ul>${e.accounts.map(([a,why,dir])=>`<li>${sideText(a, a===e.dr, dir, R)}</li>`).join('')}</ul>`; }
+function amountBlock(e){ return e.derive ? `<div class="q">How the amount was found</div><div class="derive">${esc(e.derive)}</div>` : ''; }
+function checkBlock(e){ return e.check ? `<div class="check">Check: ${esc(e.check)}</div>` : ''; }
+function reasoning(e, level, showLands){
+  const r=rec(e.id);
+  let h = '';
+  if (level>=1) h += wordsBlock(e);
+  if (level>=2) h += accountsBlock(e);
+  if (level>=3) h += sidesBlock(e) + amountBlock(e) + checkBlock(e) + `<div style="margin-top:8px"><button type="button" class="lnk" onclick="toggleLands('${e.id}')">${r.lands?'▾':'▶'} Where it lands</button>${r.lands?`<div>${landsBlock(e)}</div>`:''}</div>`;
+  return `<div class="think">${h}</div>`;
+}
+function landsBlock(e){
+  const s=sc(); const q=equationEffect(e,R);
+  const eq = `<div class="eq">Assets ${signed(q.A)} &nbsp;=&nbsp; Liabilities ${signed(q.L)} &nbsp;+&nbsp; Stockholders' equity ${signed(q.SE)}<div class="note">${q.viaNI?'The equity change comes through net income: a revenue raises it, an expense lowers it, and net income flows into Retained Earnings.':'No revenue or expense here, so net income is untouched.'} ${q.balanced?'Both sides move by the same amount, so the equation still balances.':''}</div></div>`;
+  if (e.kind!=='adj') return eq;
+  const isAcct = /Expense$/.test(e.dr) ? e.dr : e.cr;
+  const bsAcct = isAcct===e.dr ? e.cr : e.dr;
+  const isExp = /Expense$/.test(isAcct);
+  const bsType = R.typeOf[bsAcct]; const bsDir = (e.accounts.find(([a])=>a===bsAcct)||[])[2]||'up';
+  const bsWord = bsType==='contra' ? `Equipment's book value ${bsDir==='up'?'down':'up'}` : `${bsAcct} ${bsDir}`;
+  return eq + `<div class="lands"><div class="beyond">Beyond the test — how the rule plays out on the two statements</div>
+    <div class="two">
+      <div class="stmt"><div class="t">Income statement for ${MONTHS[s.month-1]}</div>
+        <div class="line"><span>${esc(isAcct)}</span><span>+${fmt(e.amount)}</span></div>
+        <div class="sub">${isExp?'an expense goes up, so net income goes down':'a revenue goes up, so net income goes up'} by ${money(e.amount)}</div></div>
+      <div class="stmt"><div class="t">Balance sheet at ${s.endLong}</div>
+        <div class="line"><span>${esc(bsAcct)} (${SECTION[bsType]})</span><span>${bsDir==='up'?'+':'–'}${fmt(e.amount)}</span></div>
+        <div class="sub">${bsWord} by ${money(e.amount)}</div>
+        <div class="line"><span>Retained Earnings (equity)</span><span>${isExp?'–':'+'}${fmt(e.amount)}</span></div>
+        <div class="sub">net income flows here, so equity moves by the same ${money(e.amount)}</div></div>
+    </div>
+    <div class="arrow">One income statement account, one balance sheet account — and the balance sheet still balances because Retained Earnings absorbs the net income change.</div></div>`;
+}
+function jeTable(e){
+  const lab = e.kind==='adj' ? `<span class="lab">(${e.label})</span>` : '';
+  return `<table class="je"><tr><th>Date</th><th>Account name</th><th>Debit</th><th>Credit</th></tr>
+    <tr><td class="d">${e.date}</td><td>${acctBtn(e.dr)}${lab}</td><td class="amt">${fmt(e.amount)}</td><td class="amt"></td></tr>
+    <tr><td class="d"></td><td class="cr-acct">${acctBtn(e.cr)}</td><td class="amt"></td><td class="amt">${fmt(e.amount)}</td></tr></table>`;
+}
+
+// ───────────────────────────── Rendering ─────────────────────────────
+function progress(stepId){
+  const s=sc(); const w=W();
+  const cnt = (kind)=>{ const l=R.entries.filter(e=>e.kind===kind); return [l.filter(e=>isDone(e.id)).length, l.length]; };
+  switch(stepId){
+    case 'journal': return cnt('txn');
+    case 'ajes': return cnt('adj');
+    case 'post': { const accts=postAccounts('txn'); return [accts.filter(a=>(w.postStatus['txn:'+a]||{}).ok).length, accts.length]; }
+    case 'balance': { const accts=R.active.map(a=>a.name); return [accts.filter(a=>(w.bal[a]||{}).status).length, accts.length]; }
+    case 'tb': return [w.tbResult && w.tbResult.allOk ? 1 : 0, 1];
+  }
+  return null;
+}
+function render(){
+  const s=sc();
+  $('#scenario').innerHTML = allScenarios().map(x=>`<option value="${x.id}">${esc(x.id===CUSTOM_ID?'Build your own: '+x.name:x.name)}</option>`).join('');
+  $('#scenario').value=s.id;
+  $('#modepill').textContent = MODE_LABEL[mode()];
+  const author = mode()==='author';
+  $('#steps').innerHTML = STEPS.map(st=>{ const p = author?null:progress(st.id); const badge = p ? `<span class="prog ${p[0]===p[1]&&p[1]>0?'done':''}">${p[0]}/${p[1]}</span>` : '';
+    return `<button type="button" class="${state.step===st.id?'active':''}" onclick="setStep('${st.id}')"><span class="n">${st.n}</span>${st.label}${badge}</button>`; }).join('')
+    + `<button type="button" class="all ${state.step==='all'?'active':''}" onclick="setStep('all')">${author?'Everything on one page':'Review everything'}</button>`;
+  const main=$('#main');
+  if (state.step==='all') main.innerHTML = STEPS.filter(st=>st.id!=='setup').map(st=>`<div class="allsep">Step ${st.n} · ${st.label}</div>`+renderSolution(st.id)).join('');
+  else main.innerHTML = renderStep(state.step) + stepNav(state.step);
+  $('#foot').textContent = `Sorensen's Cycle Lab v${VERSION} · Mr. Sorensen · ACC 153`;
+}
+function stepNav(id){
+  const i = STEPS.findIndex(s=>s.id===id); if (i<0) return '';
+  const prev = STEPS[i-1], next = STEPS[i+1];
+  return `<div class="stepnav">${prev?`<button type="button" onclick="setStep('${prev.id}')">← Step ${prev.n}: ${prev.label}</button>`:'<span></span>'}${next?`<button type="button" class="next" onclick="setStep('${next.id}')">Step ${next.n}: ${next.label} →</button>`:`<button type="button" class="next" onclick="setStep('all')">Review everything →</button>`}</div>`;
+}
+function intro(stepId, extra){ const st=STEPS.find(x=>x.id===stepId); const part = st.part ? `<span class="pill gray">Test ${st.part}</span> ` : ''; return `<div class="card"><div class="stepintro"><h2>Step ${st.n} · ${st.label} ${part}</h2><p class="muted">${st.goal}</p>${extra||''}</div></div>`; }
+function faq(key){ const q=FAQ[key]; if(!q) return ''; return `<div class="card faq"><h3 style="margin-top:0">Common questions at this step</h3>${q.map(([a,b])=>`<details><summary>${a}</summary><p>${b}</p></details>`).join('')}</div>`; }
+function renderStep(id){
+  const s=sc(); const author = mode()==='author';
+  switch(id){
+    case 'setup': return renderSetup(s);
+    case 'journal': return author ? intro('journal') + renderSolution('journal') + faq('journal') : renderEntries(s,'txn');
+    case 'post': return author ? intro('post') + renderSolution('post') + faq('post') : renderPosting(s,'txn');
+    case 'ajes': return author ? intro('ajes') + renderSolution('ajes') + faq('ajes') : renderEntries(s,'adj');
+    case 'balance': return author ? intro('balance') + renderSolution('balance') + faq('balance') : renderPosting(s,'adj');
+    case 'tb': return author ? intro('tb') + renderSolution('tb') + faq('tb') : renderTBAttempt(s);
+  }
+  return '';
+}
+function modeSelector(s){
+  const m=mode();
+  if (s.id==='penny') return `<div class="goal"><b>On your own.</b> Guidance appears after your first try: hint 1 after one check, hint 2 after two, the full reasoning and the answer after three. Decide on paper first.</div>`;
+  const opts = s.custom ? [['author','Author — show everything'],['guided','Solve it myself — hints before I try'],['own','Solve it myself — guidance after I try']] : [['guided','Hints before I try'],['own','Guidance after I try']];
+  return `<div class="goal"><b>How you want help:</b> ${opts.map(([v,l])=>`<button type="button" class="lnk ${m===v?'think':''}" onclick="setMode('${v}')">${m===v?'● ':'○ '}${l}</button>`).join(' ')}
+    <div class="small muted" style="margin-top:6px">${m==='guided'?'Hints are open before you try. The answer shows after one check.':m==='own'?'Hint 1 opens after your first check, hint 2 after the second, the full reasoning and the answer after the third.':'You are the author, so every step shows the worked solution with the reasoning.'}</div></div>`;
+}
+function renderSetup(s){
+  const beg = Object.entries(s.beginning).filter(([n,a])=>a).map(([n,a])=>`<div class="b">${acctBtn(n)} <span class="v">${fmt(a)}</span></div>`).join('');
+  const groups = {};
+  R.coa.forEach(([n,t])=>{ if(R.ledger[n]) (groups[t] ||= []).push(n); });
+  const coa = Object.entries(groups).map(([t,names])=>`<li class="h">${TYPE_LABEL[t]}</li>`+names.map(n=>`<li>${acctBtn(n)}</li>`).join('')).join('');
+  const passes = `<div class="card"><h2>How to use this</h2>
+    <div class="passes">
+      <div class="p"><b>First pass — Gilda's, guided.</b> You do every entry, posting and balance yourself, but the hints are open before you try and the answer shows after one check.</div>
+      <div class="p"><b>Second pass — Penny's, on your own.</b> Decide on paper first. Hints unlock one at a time after each check; the full reasoning and the answer come after the third try.</div>
+      <div class="p"><b>Third pass — your own company.</b> Choose "Build your own," invent a month, then switch to "Solve it myself" and work it as a problem.</div>
+    </div>
+    <p class="small muted" style="margin:8px 0 0">Every account name is a link to its T-account. Once an entry is checked, it can jump to its postings and back. The reference strip at the bottom has the rules.</p></div>`;
+  const builder = s.custom ? renderBuilder(s) : '';
+  const resetBtn = s.custom ? '' : `<p class="small muted" style="margin-top:10px"><button type="button" class="lnk danger" onclick="if(confirm('Clear all your work on this company?')){resetWork(state.scenario);render();save();}">Clear my work on this company</button></p>`;
+  return intro('setup') + (s.id==='gilda' ? passes : '') + `
+  <div class="card"><h2>${esc(s.name)}</h2><p>${s.intro}</p>${modeSelector(s)}
+    <h3>How this problem works — the same five parts as the test</h3>
+    <div class="overview"><ol>
+      <li>Record the transaction journal entries (Step 2).</li>
+      <li>Post them to T-accounts — beginning balances are already in (Step 3). Do not total anything yet.</li>
+      <li>Record the adjusting journal entries (Step 4).</li>
+      <li>Post those too, then calculate every ending balance (Step 5).</li>
+      <li>Prepare the adjusted trial balance for ${s.endLong} (Step 6).</li></ol></div>
+    <h3>Beginning balances as of ${s.month}/1</h3>
+    <div class="beg">${beg||'<div class="b muted">None yet</div>'}</div>
+    <h3>Chart of accounts</h3><ul class="coa">${coa||'<li class="muted">Accounts appear here as you add events.</li>'}</ul>${resetBtn}
+  </div>` + builder + faq(s.custom?'build':'setup');
+}
+
+// ---- Steps 2 and 4: journal entries, attempt first ----
+function renderEntries(s, kind){
+  const list = R.entries.filter(e=>e.kind===kind);
+  const stepId = kind==='txn'?'journal':'ajes';
+  const m = mode();
+  const extra = kind==='adj'
+    ? `<div class="goal">For each event, ask the three questions: <b>What can we recognize?</b> · <b>Has the cash already moved?</b> · <b>Which side?</b>${m==='own'?' Hints unlock after each check.':' Hints are open — use them if you need them.'}</div>`
+    : `<div class="goal">Two questions decide every everyday entry: <b>Is cash moving now?</b> and <b>Is the work (or the benefit) happening now, or later?</b>${m==='own'?' Hints unlock after each check.':' Hints are open — use them if you need them.'}</div>`;
+  const empty = list.length ? '' : `<p class="muted">No ${kind==='txn'?'transactions':'adjusting events'} yet — add some in Step 1.</p>`;
+  const cards = list.map(e=>entryCard(e, s)).join('');
+  return intro(stepId, extra) + `<div class="card"><h2>${kind==='txn'?`Transactions for ${esc(s.name)} during ${s.period}`:`End-of-month (${s.endShort}) adjusting events for ${esc(s.name)}`}</h2>${empty}${cards}</div>` + faq(stepId);
+}
+function entryCard(e, s){
+  const r=rec(e.id); const avail=hintLevelAvailable(r); const done=!!r.status;
+  const showCues = r.hint>=1 || done;
+  const head = `<div class="head"><span class="date">${e.ev.date||s.endShort}</span><span class="text">${showCues?cueMarkup(e).html:esc(e.ev.text)}</span>${e.kind==='adj'?`<span class="pill gold">${e.label}</span>`:''}${done?`<span class="pill ${r.status==='correct'?'green':'gray'}">${r.status==='correct'?(r.firstTry?'✓ first try':'✓ correct'):'shown'}</span>`:''}</div>`;
+  let body;
+  if (done){
+    body = jeTable(e) + `<div class="why">${e.why}</div>
+      <div class="tools">
+        <button type="button" class="lnk think" onclick="openHint('${e.id}',3)">${r.hint>=3?'▾ Hide the reasoning':'▸ The full reasoning'}</button>
+        <button type="button" class="lnk" onclick="go('${e.kind==='txn'?'post':'balance'}','[data-eid=\\'${e.id}\\']')">→ See it posted</button>
+      </div>${r.hint>=3?reasoning(e,3):''}`;
+  } else {
+    const opts = amountOptions(e);
+    const form = `<table class="je attempt"><tr><th>Date</th><th>Account name</th><th>Debit</th><th>Credit</th></tr>
+      <tr><td class="d">${e.date}</td><td>${acctSelect(e.id,'dr',r.sel.dr)}</td><td class="amt">${amtSelect(e.id,'drAmt',r.sel.drAmt,opts)}</td><td class="amt"></td></tr>
+      <tr><td class="d"></td><td class="cr-acct">${acctSelect(e.id,'cr',r.sel.cr)}</td><td class="amt"></td><td class="amt">${amtSelect(e.id,'crAmt',r.sel.crAmt,opts)}</td></tr></table>`;
+    const hintBtn = (lvl, label) => { const locked = lvl>avail; return `<button type="button" class="lnk ${r.hint===lvl?'think':''}" ${locked?'disabled':''} onclick="openHint('${e.id}',${lvl})" title="${locked?'Unlocks after '+(lvl)+(lvl===1?' check':' checks'):''}">${locked?'🔒 ':''}${label}${locked?' — after '+lvl+(lvl===1?' check':' checks'):''}</button>`; };
+    const ans = answerAvailable(r) ? `<button type="button" class="lnk" onclick="showAnswer('${e.id}')">Show the answer</button>` : `<button type="button" class="lnk" disabled title="Available after ${mode()==='guided'?'one check':'three checks'}">🔒 Show the answer — after ${mode()==='guided'?'1 check':'3 checks'}</button>`;
+    const fb = r.last ? `<div class="fb ${r.last.ok?'ok':'no'}" id="fb-${e.id}">${esc(r.last.msg)}</div>` : '';
+    body = form + `<div class="tools"><button type="button" class="btn" onclick="checkEntryUI('${e.id}')">Check my entry</button>${hintBtn(1,'Hint 1: the words')}${hintBtn(2,'Hint 2: the accounts')}${hintBtn(3,'Hint 3: full reasoning')}${ans}</div>${fb}${r.hint>0?reasoning(e, Math.min(r.hint, avail)):''}`;
+  }
+  return `<div class="ev" id="je-${e.id}">${head}${body}</div>`;
+}
+
+// ---- Steps 3 and 5: posting by T-account, then balances ----
+function postAccounts(phase){ return R.active.filter(a=>R.ledger[a.name].some(p=>phase==='adj'||p.kind!=='adj')).map(a=>a.name); }
+function addPosting(acct, phase){
+  const sideEl=document.getElementById(`add-side-${slug(acct)}`), entEl=document.getElementById(`add-ent-${slug(acct)}`);
+  if(!sideEl||!entEl||!sideEl.value||!entEl.value) return;
+  const side=sideEl.value, eid=entEl.value;
+  const w=W(); const list=(w.post[acct] ||= []);
+  if (list.some(p=>p.eid===eid && p.side===side)) return;
+  list.push({eid, side}); delete w.postStatus[phase+':'+acct]; render(); save();
+}
+function removePosting(acct, i, phase){ const w=W(); (w.post[acct]||[]).splice(i,1); delete w.postStatus[phase+':'+acct]; render(); save(); }
+function checkPostings(acct, phase){
+  const w=W(); const kindOf = eid => (R.entries.find(e=>e.id===eid)||{}).kind;
+  const expected = R.ledger[acct].filter(p=>p.kind===phase && isDone(p.eid));
+  const pending = R.ledger[acct].filter(p=>p.kind===phase && !isDone(p.eid)).length;
+  const mine = (w.post[acct]||[]).filter(p=>kindOf(p.eid)===phase);
+  const key = p => p.eid+'|'+p.side;
+  const expKeys = new Set(expected.map(key)), mineKeys = new Set(mine.map(key));
+  const missing = expected.filter(p=>!mineKeys.has(key(p)));
+  const wrongSide = mine.filter(p=>!expKeys.has(key(p)) && expected.some(q=>q.eid===p.eid));
+  const extra = mine.filter(p=>!expected.some(q=>q.eid===p.eid));
+  const lab = eid => { const e=R.entries.find(x=>x.id===eid); return e ? `${e.label} · ${fmt(e.amount)}` : eid; };
+  const parts=[];
+  if (!missing.length && !wrongSide.length && !extra.length && !pending) parts.push(expected.length ? `Correct — ${expected.length} ${expected.length===1?'posting':'postings'}.` : `Nothing to post here for this part — no ${phase==='txn'?'transaction':'adjusting'} line names ${acct}.`);
+  else {
+    if (missing.length) parts.push(`${missing.length} ${missing.length===1?'posting is':'postings are'} missing — look through your journal for every line that names ${acct}.`);
+    if (wrongSide.length) parts.push(`On the wrong side: ${wrongSide.map(p=>lab(p.eid)).join(', ')}. A debit always goes on the left and a credit on the right — check which line of that entry names ${acct}.`);
+    if (extra.length) parts.push(`${extra.map(p=>lab(p.eid)).join(', ')} ${extra.length===1?'does':'do'} not belong in ${acct} — that entry never names this account.`);
+    if (pending) parts.push(`${pending} ${pending===1?'entry that touches this account is':'entries that touch this account are'} still unchecked in ${phase==='txn'?'Step 2':'Step 4'}.`);
+  }
+  const ok = !missing.length && !wrongSide.length && !extra.length && !pending;
+  w.postStatus[phase+':'+acct] = {ok, msg:parts.join(' ')};
+  if (ok) { w.post[acct] = (w.post[acct]||[]).filter(p=>kindOf(p.eid)!==phase).concat(expected.map(p=>({eid:p.eid, side:p.side}))); }
+  render(); save();
+}
+function checkAllPostings(phase){ postAccounts(phase).forEach(a=>checkPostings(a, phase)); }
+function journalDrawer(kind){
+  const list=R.entries.filter(e=>e.kind===kind); const done=list.filter(e=>isDone(e.id));
+  const rows = done.map(e=>`<div class="jl"><span class="date">${e.label}</span><span>${esc(e.dr)} <b>${fmt(e.amount)}</b></span><span class="crl">${esc(e.cr)} <b>${fmt(e.amount)}</b></span></div>`).join('');
+  const note = done.length<list.length ? `<div class="small muted" style="margin-top:6px">${list.length-done.length} ${list.length-done.length===1?'entry is':'entries are'} not checked yet — those lines become postable once you check them in ${kind==='txn'?'Step 2':'Step 4'}. <button type="button" class="lnk" onclick="setStep('${kind==='txn'?'journal':'ajes'}')">Go there</button></div>` : '';
+  return `<details class="card drawer" ${window.innerWidth>700?'open':''}><summary>Your journal — ${kind==='txn'?'transaction':'adjusting'} entries you have checked (${done.length} of ${list.length})</summary>${rows||'<p class="small muted">None checked yet.</p>'}${note}</details>`;
+}
+function renderPosting(s, phase){
+  const stepId = phase==='txn'?'post':'balance'; const w=W();
+  const kindOf = eid => (R.entries.find(e=>e.id===eid)||{}).kind;
+  const eligible = R.entries.filter(e=>e.kind===phase && isDone(e.id));
+  const options = eligible.map(e=>`<option value="${e.id}">${e.label} · ${fmt(e.amount)}</option>`).join('');
+  const accts = phase==='txn' ? postAccounts('txn') : R.active.map(a=>a.name);
+  const note = phase==='txn'
+    ? `<div class="goal">In each account, tap <b>+ left</b> or <b>+ right</b> and choose which entry's line goes there. Label is the date. Ending balances come later — nothing is totaled in this step.</div>`
+    : `<div class="goal">Post the adjusting lines the same way (they are labeled AJE 1–${s.adjustments.length}). Then, for each account, choose the side and the amount of its ending balance. Beginning balances count.</div>`;
+  const cards = accts.map(a=>{
+    const st = w.postStatus[phase+':'+a]; const okP = st && st.ok;
+    const ledger = R.ledger[a];
+    const fixedTxn = phase==='adj' ? ledger.filter(p=>p.kind==='txn') : [];
+    const mine = (w.post[a]||[]).map((p,i)=>({...p,i})).filter(p=>kindOf(p.eid)===phase);
+    const beg = ledger.filter(p=>p.kind==='beg');
+    const col = side => {
+      const b = beg.filter(p=>p.side===side).map(p=>`<div class="p beg"><span class="lab">Beg.</span><span>${fmt(p.amount)}</span></div>`).join('');
+      const f = fixedTxn.filter(p=>p.side===side).map(p=>`<button type="button" class="p txn" data-eid="${p.eid}" onclick="go('journal','#je-${p.eid}')"><span class="lab">${p.label}</span><span>${fmt(p.amount)}</span></button>`).join('');
+      const m = mine.filter(p=>p.side===side).map(p=>{ const e=R.entries.find(x=>x.id===p.eid); return `<div class="p mine ${e.kind}" data-eid="${p.eid}"><span class="lab">${e.label}</span><span>${fmt(e.amount)}${okP?'':`<button type="button" class="x" title="Remove" onclick="removePosting('${esc(a)}',${p.i},'${phase}')">×</button>`}</span></div>`; }).join('');
+      return b+f+m;
+    };
+    const fb = st ? `<div class="fb ${st.ok?'ok':'no'} small">${esc(st.msg)}</div>` : '';
+    const balPart = phase==='adj' ? balanceForm(a) : '';
+    const addRow = okP ? '' : `<div class="addrow"><select id="add-side-${slug(a)}" class="sel small"><option value="L">left</option><option value="R">right</option></select><select id="add-ent-${slug(a)}" class="sel small grow"><option value="">which entry?</option>${options}</select><button type="button" class="lnk" onclick="addPosting('${esc(a)}','${phase}')">Add</button></div>`;
+    return `<div class="ta ${okP?'okay':''}" id="ta-${slug(a)}"><div class="name">${esc(a)}${okP?' <span class="pill green">✓</span>':''}</div>
+      <div class="cols"><div class="col l">${col('L')}</div><div class="col r">${col('R')}</div></div>${addRow}
+      ${okP?'':`<div class="ex"><button type="button" class="lnk" onclick="checkPostings('${esc(a)}','${phase}')">Check ${phase==='txn'?'this account':'the adjusting postings'}</button></div>`}${fb}${balPart}</div>`;
+  }).join('');
+  const checkAll = `<div class="tools" style="margin:6px 0 10px"><button type="button" class="btn" onclick="checkAllPostings('${phase}')">Check all accounts</button>${phase==='adj'?`<button type="button" class="btn ghost" onclick="checkAllBalances()">Check all balances</button>`:''}</div>`;
+  return intro(stepId, note) + journalDrawer(phase) + `<div class="card"><h2>${phase==='txn'?'T-accounts — post the transactions':'T-accounts — post the adjustments, then balance'}</h2>${checkAll}<div class="tgrid">${cards}</div></div>` + faq(stepId);
+}
+// balances
+function balanceCandidates(a){
+  const ps=R.ledger[a]; const sum = f => ps.filter(f).reduce((s,p)=>s+p.amount,0);
+  const L=sum(p=>p.side==='L'), Rr=sum(p=>p.side==='R');
+  const noBeg = Math.abs(sum(p=>p.side==='L'&&p.kind!=='beg') - sum(p=>p.side==='R'&&p.kind!=='beg'));
+  const preAdj = Math.abs(sum(p=>p.side==='L'&&p.kind!=='adj') - sum(p=>p.side==='R'&&p.kind!=='adj'));
+  const set=new Set([Math.abs(L-Rr), noBeg, preAdj, L, Rr].map(Math.round).filter(v=>v>=0));
+  return [...set].sort((x,y)=>x-y);
+}
+function balanceForm(a){
+  const w=W(); const b = w.bal[a] ||= {attempts:0, status:null, side:'', amt:''};
+  const bal = R.balance(a,'adj'); const side = bal>0?'L':(bal<0?'R':(DEBIT_NORMAL.has(R.typeOf[a])?'L':'R'));
+  if (b.status){
+    return `<div class="bal"><div>${side==='L'?`Bal. <span class="v">${fmt(Math.abs(bal))}</span>`:''}</div><div class="r">${side==='R'?`Bal. <span class="v">${fmt(Math.abs(bal))}</span>`:''}</div></div>
+      <div class="ex"><span class="pill ${b.status==='correct'?'green':'gray'}">${b.status==='correct'?'✓ balance':'balance shown'}</span> <button type="button" class="lnk" onclick="document.getElementById('exp-${slug(a)}').classList.toggle('hidden')">▶ How was this determined?</button></div>
+      <div class="exp hidden" id="exp-${slug(a)}">${balanceExplain(R.ledger[a], bal)}</div>`;
+  }
+  const cands = balanceCandidates(a);
+  const fb = b.last ? `<div class="fb ${b.last.ok?'ok':'no'} small">${esc(b.last.msg)}</div>` : '';
+  const show = b.attempts>=2 ? `<button type="button" class="lnk" onclick="showBalance('${esc(a)}')">Show the balance</button>` : '';
+  return `<div class="balform"><div class="small muted">Ending balance</div>
+    <select class="sel small" onchange="setBal('${esc(a)}','side',this.value)"><option value="">— side —</option><option value="L" ${b.side==='L'?'selected':''}>Left (debit)</option><option value="R" ${b.side==='R'?'selected':''}>Right (credit)</option></select>
+    <select class="sel small amt" onchange="setBal('${esc(a)}','amt',this.value)"><option value="">— amount —</option>${cands.map(v=>`<option value="${v}" ${String(v)===String(b.amt)?'selected':''}>${fmt(v)}</option>`).join('')}</select>
+    <button type="button" class="lnk" onclick="checkBalance('${esc(a)}')">Check</button>${show}</div>${fb}`;
+}
+function setBal(a, k, v){ const b=W().bal[a] ||= {attempts:0,status:null,side:'',amt:''}; b[k]=v; save(); }
+function checkBalance(a, silent){
+  const w=W(); const b = w.bal[a] ||= {attempts:0,status:null,side:'',amt:''};
+  if (b.status) return;
+  if (!b.side || b.amt==='') { b.last={ok:false,msg:'Choose a side and an amount, then check.'}; if(!silent){render();} return; }
+  const bal = R.balance(a,'adj'); const side = bal>0?'L':(bal<0?'R':(DEBIT_NORMAL.has(R.typeOf[a])?'L':'R'));
+  const ps=R.ledger[a]; const sum = f => ps.filter(f).reduce((s,p)=>s+p.amount,0);
+  const noBeg = Math.abs(sum(p=>p.side==='L'&&p.kind!=='beg') - sum(p=>p.side==='R'&&p.kind!=='beg'));
+  const preAdj = Math.abs(sum(p=>p.side==='L'&&p.kind!=='adj') - sum(p=>p.side==='R'&&p.kind!=='adj'));
+  const L=sum(p=>p.side==='L'), Rr=sum(p=>p.side==='R'); const amt=+b.amt;
+  const unposted = ps.some(p=>p.kind==='adj') && !(w.postStatus['adj:'+a]||{}).ok;
+  b.attempts++;
+  const amtOK = amt===Math.round(Math.abs(bal)), sideOK = b.side===side;
+  if (amtOK && sideOK){ b.status='correct'; b.last={ok:true,msg:b.attempts===1?'Correct on the first try.':'Correct on try '+b.attempts+'.'}; }
+  else {
+    const parts=[];
+    if (unposted) parts.push('Post and check this account\'s adjusting entries first — the balance includes them.');
+    if (!amtOK){
+      if (bal!==0 && amt===noBeg && noBeg!==Math.abs(bal)) parts.push('That leaves out the beginning balance — it is the first posting in the account and counts in the total.');
+      else if (ps.some(p=>p.kind==='adj') && amt===preAdj && preAdj!==Math.abs(bal)) parts.push('That leaves out the adjusting postings in gold.');
+      else if ((amt===Math.round(L) && L!==Math.abs(bal)) || (amt===Math.round(Rr) && Rr!==Math.abs(bal))) parts.push('That is one side\'s total. A balance is the difference between the two sides.');
+      else parts.push('Add up each side, then subtract the smaller total from the larger one.');
+    }
+    if (!sideOK) parts.push(bal===0 ? 'A zero balance sits on the account\'s normal side.' : 'The balance goes on the side with the larger total' + (amtOK ? ' — which side had more here?' : '.'));
+    b.last={ok:false,msg:parts.join(' ')};
+  }
+  if (!silent){ render(); save(); }
+}
+function checkAllBalances(){ R.active.forEach(a=>checkBalance(a.name, true)); render(); save(); }
+function showBalance(a){ const b=W().bal[a]; if (!b || b.attempts<2) return; b.status='shown'; render(); save(); }
+
+// ---- Step 6: trial balance, columns chosen, amounts carried forward ----
+function renderTBAttempt(s){
+  const w=W(); const t = w.tb;
+  const rows = R.tb.map(r=>{
+    const b=w.bal[r.name]; const have = b && b.status; const amt = have ? (b.status==='correct' ? +b.amt : Math.round(r.debit||r.credit)) : null;
+    const col = t[r.name]||'';
+    const res = w.tbResult && w.tbResult.rows[r.name];
+    const mark = res ? (res.ok ? '<span class="pill green">✓</span>' : `<span class="pill gray">${esc(res.msg)}</span>`) : '';
+    return `<tr class="row"><td>${acctBtn(r.name)} ${mark}</td><td class="amt">${have?fmt(amt):'<span class="small muted">balance it in Step 5</span>'}</td><td>${have?`<select class="sel small" onchange="setTBCol('${esc(r.name)}',this.value)"><option value="">— column —</option><option value="D" ${col==='D'?'selected':''}>Debit</option><option value="C" ${col==='C'?'selected':''}>Credit</option></select>`:''}</td></tr>`;
+  }).join('');
+  const totals = w.tbResult ? `<tr class="tot"><td>Totals</td><td class="amt">${fmt(w.tbResult.debit)} · ${fmt(w.tbResult.credit)}</td><td>${w.tbResult.tie?'<span class="pill green">ties</span>':'<span class="pill gray">does not tie</span>'}</td></tr>` : '';
+  const after = w.tbResult ? (w.tbResult.allOk && w.tbResult.tie ? `<div class="tie">${fmt(w.tbResult.debit)} = ${fmt(w.tbResult.credit)} — the columns tie. You have done exactly what Part 2 of the test asks.</div>` : `<div class="fb no">${esc(w.tbResult.msg)}</div>`) : '';
+  const missing = R.tb.filter(r=>!(w.bal[r.name]&&w.bal[r.name].status)).length;
+  const note = missing ? `<div class="goal">${missing} ${missing===1?'account still needs':'accounts still need'} an ending balance in Step 5 before it can go on the trial balance. <button type="button" class="lnk" onclick="setStep('balance')">Go to Step 5</button></div>` : `<div class="goal">Your balances from Step 5 are carried forward. Choose the column for each one, then check. Debit balances go in the Debits column, credit balances in Credits — a zero balance goes in its normal column.</div>`;
+  return intro('tb', note) + `<div class="card tb"><h3>${esc(s.name)}</h3><div class="sub">Adjusted Trial Balance<br>${s.endLong}</div>
+    <table><tr><th>Account</th><th>Your balance</th><th style="text-align:left">Column</th></tr>${rows}${totals}</table>
+    <div class="tools" style="justify-content:center;margin-top:10px"><button type="button" class="btn" onclick="checkTB()">Check my trial balance</button></div>${after}</div>` + faq('tb');
+}
+function setTBCol(a, v){ W().tb[a]=v; save(); }
+function checkTB(){
+  const w=W(); const rows={}; let debit=0, credit=0, allOk=true, missing=0;
+  R.tb.forEach(r=>{ const b=w.bal[r.name]; if(!(b&&b.status)){ missing++; allOk=false; return; }
+    const amt = b.status==='correct' ? +b.amt : Math.round(r.debit||r.credit);
+    const col=w.tb[r.name]; if(!col){ rows[r.name]={ok:false,msg:'choose a column'}; allOk=false; return; }
+    const normal = DEBIT_NORMAL.has(r.type)?'D':'C'; const correct = r.debit>0?'D':(r.credit>0?'C':normal);
+    if (col==='D') debit+=amt; else credit+=amt;
+    const ok = col===correct; if(!ok) allOk=false;
+    rows[r.name]={ok, msg: ok?'':(r.zero?'zero goes in its normal column':( (DEBIT_NORMAL.has(r.type)?'debit':'credit')+' balance'))}; });
+  const tie = debit===credit && debit>0;
+  let msg='';
+  if (missing) msg = `${missing} ${missing===1?'account has':'accounts have'} no balance yet — finish Step 5 first.`;
+  else if (!allOk) msg = 'Some rows are in the wrong column. Assets and expenses end with debit balances; liabilities, equity and revenue end with credit balances.';
+  else if (!tie) msg = `Every column choice is right, but the totals differ: debits ${fmt(debit)}, credits ${fmt(credit)}. The usual suspects, in order: a balance that left out its beginning amount, an adjustment posted to the wrong side, and the supplies math. Go back to Step 5 and re-check the accounts that were "shown" rather than solved.`;
+  w.tbResult={rows, debit, credit, tie, allOk, msg}; render(); save();
+}
+
+// ---- Solution views (author mode and review) ----
+function renderSolution(stepId){
+  const s=sc(); const w=W(); const author=mode()==='author';
+  const showE = e => author || isDone(e.id);
+  if (stepId==='journal' || stepId==='ajes'){
+    const kind = stepId==='journal'?'txn':'adj';
+    const list=R.entries.filter(e=>e.kind===kind);
+    return `<div class="card">${list.map(e=>showE(e)?`<div class="ev" id="je-${e.id}"><div class="head"><span class="date">${e.date}</span><span class="text muted small">${esc(e.ev.text)}</span>${e.kind==='adj'?`<span class="pill gold">${e.label}</span>`:''}</div>${jeTable(e)}<div class="why">${e.why}</div>${author?`<div class="tools"><button type="button" class="lnk think" onclick="openHint('${e.id}',3)">${rec(e.id).hint>=3?'▾ Hide the reasoning':'▸ The full reasoning'}</button></div>${rec(e.id).hint>=3?reasoning(e,3):''}`:''}</div>`:`<div class="ev"><div class="head"><span class="date">${e.date}</span><span class="text muted small">${esc(e.ev.text)}</span></div><div class="covered">Not checked yet — work it in Step ${kind==='txn'?2:4}.</div></div>`).join('')||'<p class="muted">Nothing here yet.</p>'}</div>`;
+  }
+  if (stepId==='post' || stepId==='balance'){
+    const upTo = stepId==='post'?'txn':'adj';
+    const cards = R.active.map(a=>{
+      const ps = R.ledger[a.name].filter(p=>upTo==='adj'||p.kind!=='adj').filter(p=>p.kind==='beg'||showE(R.entries.find(e=>e.id===p.eid)));
+      const col = side => ps.filter(p=>p.side===side).map(p=> p.kind==='beg' ? `<div class="p beg"><span class="lab">Beg.</span><span>${fmt(p.amount)}</span></div>` : `<button type="button" class="p ${p.kind}" data-eid="${p.eid}" onclick="go('${p.kind==='txn'?'journal':'ajes'}','#je-${p.eid}')"><span class="lab">${p.label}</span><span>${fmt(p.amount)}</span></button>`).join('');
+      const bal = R.balance(a.name,'adj'); const side = bal>0?'L':(bal<0?'R':(DEBIT_NORMAL.has(a.type)?'L':'R'));
+      const showBal = upTo==='adj' && (author || (w.bal[a.name]&&w.bal[a.name].status));
+      const balHtml = showBal ? `<div class="bal"><div>${side==='L'?`Bal. <span class="v">${fmt(Math.abs(bal))}</span>`:''}</div><div class="r">${side==='R'?`Bal. <span class="v">${fmt(Math.abs(bal))}</span>`:''}</div></div>
+           <div class="ex"><button type="button" class="lnk" onclick="document.getElementById('exp-${slug(a.name)}').classList.toggle('hidden')">▶ How was this determined?</button></div>
+           <div class="exp hidden" id="exp-${slug(a.name)}">${balanceExplain(R.ledger[a.name], bal)}</div>` : (upTo==='adj'?`<div class="covered small">Balance not done yet.</div>`:'');
+      return `<div class="ta" id="ta-${slug(a.name)}"><div class="name">${esc(a.name)}</div><div class="cols"><div class="col l">${col('L')}</div><div class="col r">${col('R')}</div></div>${balHtml}</div>`;
+    }).join('');
+    return `<div class="card"><div class="tgrid">${cards}</div></div>`;
+  }
+  if (stepId==='tb'){
+    const done = author || (w.tbResult && w.tbResult.allOk && w.tbResult.tie);
+    if (!done) return `<div class="card tb"><div class="covered">Trial balance not finished yet — check it in Step 6.</div></div>`;
+    const rows = R.tb.map(r=>`<tr class="row"><td>${acctBtn(r.name)}</td><td class="amt">${r.debit?fmt(r.debit):''}</td><td class="amt">${r.credit?fmt(r.credit):(r.zero?'0':'')}</td></tr>`).join('');
+    return `<div class="card tb"><h3>${esc(s.name)}</h3><div class="sub">Adjusted Trial Balance<br>${s.endLong}</div><table><tr><th>Account</th><th>Debits</th><th>Credits</th></tr>${rows}<tr class="tot"><td>Totals</td><td class="amt">${fmt(R.totals.debit)}</td><td class="amt">${fmt(R.totals.credit)}</td></tr></table><div class="tie">${fmt(R.totals.debit)} = ${fmt(R.totals.credit)} — the columns tie.</div></div>`;
+  }
+  return '';
+}
+function balanceExplain(ps, bal){
+  const L=ps.filter(p=>p.side==='L').reduce((s,p)=>s+p.amount,0), Rr=ps.filter(p=>p.side==='R').reduce((s,p)=>s+p.amount,0);
+  const list = side => ps.filter(p=>p.side===side).map(p=>p.label+' '+fmt(p.amount)).join(' + ') || '0';
+  const bigger = L>=Rr ? 'left' : 'right';
+  return `Left side: ${list('L')} = ${fmt(L)}<br>Right side: ${list('R')} = ${fmt(Rr)}<br>Balance = ${fmt(Math.max(L,Rr))} – ${fmt(Math.min(L,Rr))} = <b>${fmt(Math.abs(bal))}</b> on the ${bigger} side${bal===0?' (zero — the whole amount was used up or earned)':''}`;
+}
+// ───────────────────────────── Build your own ─────────────────────────────
+const BUILD_TXN = [
+  ['service_cash','Performed services for cash',[['amount','Amount $']]],
+  ['service_account','Performed services on account',[['amount','Amount $']]],
+  ['collect_ar','Collected from customers on account',[['amount','Amount $']]],
+  ['cash_in_advance','Received cash upfront for work not yet done',[['amount','Amount $']]],
+  ['buy_equipment_cash','Bought equipment for cash',[['amount','Cost $'],['lifeMonths','Useful life (months)'],['what','What was bought']]],
+  ['prepay','Paid upfront for rent or insurance',[['prepaid','Which prepaid',['Prepaid Rent','Prepaid Insurance']],['amount','Total paid $'],['months','Months it covers']]],
+  ['buy_supplies_cash','Bought supplies for cash',[['amount','Amount $']]],
+  ['buy_supplies_account','Bought supplies on account',[['amount','Amount $']]],
+  ['pay_wages','Paid wages employees earned this month',[['amount','Amount $']]],
+  ['expense_on_account','Got a bill for something used this month (pay later)',[['account','Expense',['Advertising Expense','Utilities Expense']],['amount','Amount $']]],
+  ['expense_cash','Paid for something used this month',[['account','Expense',['Advertising Expense','Utilities Expense']],['amount','Amount $']]],
+  ['pay_ap','Paid a bill owed on account',[['amount','Amount $']]],
+  ['issue_stock','Owners invested cash (issued stock)',[['amount','Amount $']]],
+];
+const BUILD_ADJ = [
+  ['adj_depreciation','Depreciation on equipment bought this month',[['ref','Which equipment','buy_equipment_cash']]],
+  ['adj_prepaid_used','One month of a prepaid used up',[['ref','Which prepaid','prepay']]],
+  ['adj_supplies','Supplies count at month end',[['onHand','Supplies on hand $']]],
+  ['adj_deferred_earned','Work done that a customer paid for upfront',[['ref','Which advance','cash_in_advance'],['amount','Amount earned this month $']]],
+  ['adj_revenue_unbilled','Work done, not yet billed',[['amount','Amount $']]],
+  ['adj_wages_accrued','Wages earned, unpaid at month end',[['amount','Amount $']]],
+  ['adj_expense_accrued','Something used this month, bill not yet received',[['account','Expense',['Utilities Expense','Advertising Expense']],['amount','Amount $']]],
+];
+function monthSpan(m, n){ const names=[]; for(let i=0;i<n;i++) names.push(MONTHS[(m-1+i)%12]); return n<=1?names[0]:(n===2?names.join(' and '):names.slice(0,-1).join(', ')+', and '+names[n-1]); }
+function genText(ev, c){
+  const co=c.name||'My Company', m=MONTHS[c.month-1], last=new Date(c.year,c.month,0).getDate(), endL=m+' '+last, nextM=MONTHS[c.month%12];
+  const A = money(ev.amount||0);
+  const ref = id => (c.transactions.find(t=>t.id===id)||{});
+  switch(ev.type){
+    case 'service_cash': return `${co} performed ${A} of services for cash.`;
+    case 'service_account': return `${co} performed ${A} of services on account.`;
+    case 'collect_ar': return `${co} collected ${A} from customers on account.`;
+    case 'cash_in_advance': return `${co} received ${A} upfront from a customer for work that has not yet been done.`;
+    case 'buy_equipment_cash': return `${co} bought ${ev.what} for ${A} in cash. It will be used for ${ev.lifeMonths} months.`;
+    case 'prepay': return `${co} paid ${A} upfront for ${ev.months} months of ${ev.prepaid.replace('Prepaid ','').toLowerCase()} covering ${ev.span}.`;
+    case 'buy_supplies_cash': return `${co} bought ${A} of supplies for cash.`;
+    case 'buy_supplies_account': return `${co} bought ${A} of supplies on account.`;
+    case 'pay_wages': return `${co} paid ${A} of wages its employees earned in ${m}.`;
+    case 'expense_on_account': return `${co} ${ev.account==='Utilities Expense'?'used':'ran'} ${A} of ${ev.account.replace(' Expense','').toLowerCase()} in ${m} on account; the bill will be paid in ${nextM}.`;
+    case 'expense_cash': return `${co} paid ${A} for ${ev.account.replace(' Expense','').toLowerCase()} that ${ev.account==='Utilities Expense'?'was used':'ran'} this month.`;
+    case 'pay_ap': return `${co} paid ${A} it owed on account.`;
+    case 'issue_stock': return `${co} issued common stock to its owners for ${A} cash.`;
+    case 'adj_depreciation': { const r=ref(ev.ref); return `The ${r.what} bought on ${r.date} needs to be adjusted. It has a useful life of ${r.lifeMonths} months.`; }
+    case 'adj_prepaid_used': { const r=ref(ev.ref); return `${co} had prepaid ${r.months} months of ${(r.prepaid||'').replace('Prepaid ','').toLowerCase()} on ${r.date}. Record the ${c.month}/${last} adjusting entry.`; }
+    case 'adj_supplies': { const bought=c.transactions.filter(t=>t.type.startsWith('buy_supplies')).reduce((x,t)=>x+t.amount,0);
+      return `The supplies account had a balance of ${money(c.beginning.Supplies||0)} on ${c.month}/1${bought?', and '+money(bought)+' of supplies were bought during '+m:'. No supplies were purchased this month'}. A count of supplies on hand at ${endL} indicates a balance of ${money(ev.onHand)}.`; }
+    case 'adj_deferred_earned': { const r=ref(ev.ref); return ev.amount>=r.amount ? `The work the customer paid upfront on ${r.date} is now done.` : `Of the ${money(r.amount)} the customer paid upfront on ${r.date}, ${A} of the work was done in ${m}. The rest will be done in ${nextM}.`; }
+    case 'adj_revenue_unbilled': return `${co} did ${A} of work in the last days of ${m} that has not yet been billed.`;
+    case 'adj_wages_accrued': return `Employees earned ${A} of wages in the last days of ${m} that will be paid in ${nextM}.`;
+    case 'adj_expense_accrued': return `${co} used ${A} of ${ev.account.replace(' Expense','').toLowerCase()} in ${m}. The bill will arrive and be paid in ${nextM}.`;
+  }
+  return '';
+}
+function builderFields(spec, c){
+  return spec[2].map(([key,label,opts])=>{
+    if (Array.isArray(opts)) return `<label>${label}<select data-f="${key}">${opts.map(o=>`<option>${o}</option>`).join('')}</select></label>`;
+    if (typeof opts==='string') { const cands=c.transactions.filter(t=>t.type===opts); return `<label>${label}<select data-f="${key}">${cands.length?cands.map(t=>`<option value="${t.id}">${t.date} — ${esc(t.text).slice(0,60)}</option>`).join(''):'<option value="">(add that transaction first)</option>'}</select></label>`; }
+    if (key==='what') return `<label>${label}<input type="text" data-f="${key}" value="a delivery van"></label>`;
+    return `<label>${label}<input type="number" data-f="${key}" min="0" step="1" ${key==='lifeMonths'||key==='months'?'value="12"':''}></label>`;
+  }).join('');
+}
+function renderBuilder(s){
+  const c = state.custom || (state.custom = blankCustom());
+  const last = new Date(c.year,c.month,0).getDate();
+  const list = (arr, kind) => arr.length ? `<div class="builtlist">${arr.map((ev,i)=>`<div class="row"><span class="date">${kind==='txn'?ev.date:s.endShort}</span><span class="t">${esc(ev.text)}</span><button type="button" class="lnk danger" onclick="removeEvent('${kind}',${i})">remove</button></div>`).join('')}</div>` : `<p class="small muted">None yet.</p>`;
+  const nextDay = Math.min(last, c.transactions.length ? parseInt(c.transactions[c.transactions.length-1].date.split('/')[1])+1 : 1);
+  return `<div class="card" id="builder"><h2>Build your own company</h2>
+    <div class="form">
+      <label>Company name<input type="text" id="b-name" value="${esc(c.name)}"></label>
+      <label>Revenue account name<input type="text" id="b-rev" value="${esc(c.revenueAccount)}"></label>
+      <label>Month<select id="b-month">${MONTHS.map((n,i)=>`<option value="${i+1}" ${i+1===c.month?'selected':''}>${n}</option>`).join('')}</select></label>
+      <label>Year<input type="number" id="b-year" value="${c.year}" min="2000" max="2100"></label>
+      <label>Beginning Cash $<input type="number" id="b-cash" value="${c.beginning.Cash}" min="0"></label>
+      <label>Beginning Supplies $<input type="number" id="b-sup" value="${c.beginning.Supplies}" min="0"></label>
+      <div class="wide small muted">Common Stock starts at ${money((c.beginning.Cash||0)+(c.beginning.Supplies||0))} so the books balance on day one. Changing the month re-dates everything you have added.</div>
+      <div class="wide"><button type="button" class="btn ghost" onclick="saveBuilderHeader()">Apply these details</button> <button type="button" class="btn ghost" onclick="resetBuilder()">Start over</button></div>
+    </div>
+    <h3>Transactions during ${MONTHS[c.month-1]}</h3>
+    ${list(c.transactions,'txn')}
+    <div class="form" id="b-txn">
+      <label>Day (1–${last})<input type="number" id="b-day" min="1" max="${last}" value="${nextDay}"></label>
+      <label>What happened<select id="b-txntype" onchange="renderBuilderFields('txn')">${BUILD_TXN.map(t=>`<option value="${t[0]}">${t[1]}</option>`).join('')}</select></label>
+      <div class="wide form" id="b-txnfields">${builderFields(BUILD_TXN[0],c)}</div>
+      <div class="wide"><button type="button" class="btn" onclick="addEvent('txn')">Add transaction</button><div class="err" id="b-txnerr"></div></div>
+    </div>
+    <h3>Adjusting events at ${s.endLong}</h3>
+    ${list(c.adjustments,'adj')}
+    <div class="form" id="b-adj">
+      <label>What needs adjusting<select id="b-adjtype" onchange="renderBuilderFields('adj')">${BUILD_ADJ.map(t=>`<option value="${t[0]}">${t[1]}</option>`).join('')}</select></label>
+      <div class="wide form" id="b-adjfields">${builderFields(BUILD_ADJ[0],c)}</div>
+      <div class="wide"><button type="button" class="btn" onclick="addEvent('adj')">Add adjusting event</button><div class="err" id="b-adjerr"></div></div>
+    </div>
+  </div>`;
+}
+function renderBuilderFields(kind){
+  const c=state.custom; const type=document.getElementById(kind==='txn'?'b-txntype':'b-adjtype').value;
+  const spec=(kind==='txn'?BUILD_TXN:BUILD_ADJ).find(t=>t[0]===type);
+  document.getElementById(kind==='txn'?'b-txnfields':'b-adjfields').innerHTML = builderFields(spec, c);
+}
+function saveBuilderHeader(){
+  const c=state.custom; c.name=($('#b-name').value||'My Company').trim()||'My Company'; c.revenueAccount=($('#b-rev').value||'Service Revenue').trim()||'Service Revenue';
+  c.month=parseInt($('#b-month').value)||1; c.year=parseInt($('#b-year').value)||2024;
+  c.beginning={Cash:Math.max(0,parseFloat($('#b-cash').value)||0), Supplies:Math.max(0,parseFloat($('#b-sup').value)||0)};
+  c.transactions.forEach(t=>{ t.date=c.month+'/'+t.date.split('/')[1]; if(t.type==='prepay') t.span=monthSpan(c.month,t.months); t.text=genText(t,c); });
+  c.adjustments.forEach(a=>{ a.text=genText(a,c); });
+  R=compute(sc()); render(); save();
+}
+function resetBuilder(){ state.custom=blankCustom(); resetWork(CUSTOM_ID); R=compute(sc()); render(); save(); }
+function removeEvent(kind, i){ const c=state.custom; const arr = kind==='txn'?c.transactions:c.adjustments; const removed = arr.splice(i,1)[0];
+  if (kind==='txn') {
+    c.adjustments = c.adjustments.filter(a=>a.ref!==removed.id);
+    const remap = {}; c.transactions.forEach((t,k)=>{ remap[t.id]='T'+(k+1); });
+    c.adjustments.forEach(a=>{ if (a.ref) a.ref = remap[a.ref]; });
+    c.transactions.forEach((t,k)=>t.id='T'+(k+1));
+    c.adjustments = c.adjustments.filter(a=>!a.ref || c.transactions.some(t=>t.id===a.ref));
+  }
+  c.adjustments.forEach((a,k)=>a.id='A'+(k+1));
+  c.adjustments.forEach(a=>{ a.text=genText(a,c); });
+  resetWork(CUSTOM_ID);
+  R=compute(sc()); render(); save(); }
+function addEvent(kind){
+  const c=state.custom; const errEl=document.getElementById(kind==='txn'?'b-txnerr':'b-adjerr'); errEl.textContent='';
+  const type=document.getElementById(kind==='txn'?'b-txntype':'b-adjtype').value;
+  const box=document.getElementById(kind==='txn'?'b-txnfields':'b-adjfields');
+  const ev={type}; box.querySelectorAll('[data-f]').forEach(el=>{ const k=el.getAttribute('data-f'); ev[k] = el.type==='number' ? parseFloat(el.value) : el.value; });
+  const fail = m => { errEl.textContent=m; };
+  const R0 = compute(sc());
+  if (kind==='txn'){
+    const day=parseInt($('#b-day').value); const last=new Date(c.year,c.month,0).getDate();
+    if (!(day>=1&&day<=last)) return fail('Pick a day between 1 and '+last+'.');
+    if (!(ev.amount>0)) return fail('Enter an amount greater than 0.');
+    if (type==='buy_equipment_cash' && !(ev.lifeMonths>=1)) return fail('Enter a useful life of at least 1 month.');
+    if (type==='prepay' && !(ev.months>=1)) return fail('Enter how many months the payment covers.');
+    if (type==='prepay') ev.span=monthSpan(c.month,ev.months);
+    if (type==='buy_equipment_cash') ev.what=(ev.what||'equipment').trim()||'equipment';
+    if (type==='collect_ar' && ev.amount > R0.balance('Accounts Receivable','txn')) return fail('Customers only owe '+money(R0.balance('Accounts Receivable','txn'))+' so far — collect that much or less, or add a sale on account first.');
+    if (type==='pay_ap' && ev.amount > -R0.balance('Accounts Payable','txn')) return fail('Only '+money(-R0.balance('Accounts Payable','txn'))+' is owed on account so far — pay that much or less, or add a purchase or bill on account first.');
+    if (['buy_equipment_cash','prepay','buy_supplies_cash','pay_wages','expense_cash','pay_ap'].includes(type) && ev.amount > R0.balance('Cash','txn')) return fail('That is more cash than the company has ('+money(R0.balance('Cash','txn'))+'). Lower the amount or add cash coming in first.');
+    const lastDay = c.transactions.length ? parseInt(c.transactions[c.transactions.length-1].date.split('/')[1]) : 1;
+    if (day < lastDay) return fail('Keep the dates in order — the last transaction was on day '+lastDay+'.');
+    ev.id='T'+(c.transactions.length+1); ev.date=c.month+'/'+day; ev.text=genText(ev,c); c.transactions.push(ev); resetWork(CUSTOM_ID);
+  } else {
+    const spec=BUILD_ADJ.find(t=>t[0]===type);
+    const needsRef = spec[2].find(f=>typeof f[2]==='string');
+    if (needsRef && !ev.ref) return fail('Add the matching transaction first, then this adjustment.');
+    if (c.adjustments.some(a=>a.type===type && (!needsRef || a.ref===ev.ref))) return fail('That adjustment is already in the list.');
+    if (type==='adj_supplies'){ const avail=(c.beginning.Supplies||0)+c.transactions.filter(t=>t.type.startsWith('buy_supplies')).reduce((s,t)=>s+t.amount,0);
+      if (!(ev.onHand>=0)) return fail('Enter the supplies on hand (0 or more).'); if (ev.onHand>avail) return fail('Only '+money(avail)+' of supplies were available this month — on hand cannot be more than that.'); }
+    else if (type==='adj_deferred_earned'){ const adv=c.transactions.find(t=>t.id===ev.ref); if (!(ev.amount>0)) return fail('Enter the amount earned this month.'); if (ev.amount>adv.amount) return fail('The customer only paid '+money(adv.amount)+' upfront — earned cannot be more than that.'); }
+    else if (['adj_revenue_unbilled','adj_wages_accrued','adj_expense_accrued'].includes(type) && !(ev.amount>0)) return fail('Enter an amount greater than 0.');
+    if (type==='adj_depreciation'||type==='adj_prepaid_used') ev.monthsUsed=1;
+    ev.id='A'+(c.adjustments.length+1); ev.text=genText(ev,c); c.adjustments.push(ev); resetWork(CUSTOM_ID);
+  }
+  R=compute(sc()); render(); save();
+  setTimeout(()=>{ const el=document.getElementById('builder'); if(el) el.scrollIntoView({block:'start'}); },30);
+}
+
+
+// ───────────────────────────── Boot ─────────────────────────────
+(function init(){
+  load();
+  if (!allScenarios().some(s=>s.id===state.scenario)) state.scenario = SCENARIOS[0].id;
+  if (!STEPS.some(s=>s.id===state.step) && state.step!=='all') state.step='setup';
+  if (state.scenario!==CUSTOM_ID && state.modes[state.scenario]==='author') delete state.modes[state.scenario];
+  const sel=$('#scenario'); sel.addEventListener('change', e=>setScenario(e.target.value));
+  R=compute(sc()); render();
+})();
+window.__cycle = {SCENARIOS, compute, state: () => state, STEPS, T, cueMarkup, equationEffect, genText, allScenarios, checkEntry, amountOptions, balanceCandidates, W: () => W()};
+</script>
+</body>
+</html>
