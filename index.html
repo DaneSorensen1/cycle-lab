@@ -211,7 +211,8 @@ nav.steps button.active .prog{color:#fff;opacity:.85}
 .ta .p.mine{cursor:default}
 .ta .p.mine .lab{color:var(--text3)}
 .ta .p.mine.adj .lab{color:var(--gold);font-weight:700}
-.ta .x{border:0;background:none;color:var(--red);font-size:13px;padding:0 0 0 6px;cursor:pointer}
+.ta .x{border:0;background:none;color:var(--text3);font-size:11px;padding:0 0 0 8px;cursor:pointer;text-decoration:underline}
+.ta .bad{color:var(--red);font-weight:700;padding-left:6px}
 .ta.okay{border-color:var(--green-border)}
 .balform{margin-top:8px;border-top:1px dashed var(--border);padding-top:6px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .balform .small.muted{width:100%}
@@ -267,7 +268,7 @@ code.code{font-family:var(--mono);font-size:12px;background:var(--surface2);padd
 
 <script>
 'use strict';
-const VERSION = '0.4.3';
+const VERSION = '0.4.4';
 const STORE_KEY = 'cycle-lab-v2';
 
 // ───────────────────────────── Accounts ─────────────────────────────
@@ -986,7 +987,7 @@ function checkPostings(acct, phase){
     if (pending) parts.push(`${pending} ${pending===1?'entry that touches this account is':'entries that touch this account are'} still unchecked in ${phase==='txn'?'Step 2':'Step 4'}.`);
   }
   const ok = !missing.length && !wrongSide.length && !extra.length && !pending;
-  w.postStatus[phase+':'+acct] = {ok, msg:parts.join(' ')};
+  w.postStatus[phase+':'+acct] = {ok, msg:parts.join(' '), bad: wrongSide.concat(extra).map(p=>p.eid+'|'+p.side)};
   logEvent('post', phase+':'+acct, ok?'ok':'issues', {missing:missing.length, wrongSide:wrongSide.length, extra:extra.length});
   if (ok) { w.post[acct] = (w.post[acct]||[]).filter(p=>kindOf(p.eid)!==phase).concat(expected.map(p=>({eid:p.eid, side:p.side}))); }
   render(); save();
@@ -1016,7 +1017,8 @@ function renderPosting(s, phase){
     const col = side => {
       const b = beg.filter(p=>p.side===side).map(p=>`<div class="p beg"><span class="lab">Beg.</span><span>${fmt(p.amount)}</span></div>`).join('');
       const f = fixedTxn.filter(p=>p.side===side).map(p=>`<button type="button" class="p txn" data-eid="${p.eid}" onclick="go('journal','#je-${p.eid}')"><span class="lab">${p.label}</span><span>${fmt(p.amount)}</span></button>`).join('');
-      const m = mine.filter(p=>p.side===side).map(p=>{ const e=R.entries.find(x=>x.id===p.eid); return `<div class="p mine ${e.kind}" data-eid="${p.eid}"><span class="lab">${e.label}</span><span>${fmt(e.amount)}${okP?'':`<button type="button" class="x" title="Remove" onclick="removePosting('${esc(a)}',${p.i},'${phase}')">×</button>`}</span></div>`; }).join('');
+      const badSet = new Set((st && st.bad) || []);
+      const m = mine.filter(p=>p.side===side).map(p=>{ const e=R.entries.find(x=>x.id===p.eid); const bad = badSet.has(p.eid+'|'+p.side); return `<div class="p mine ${e.kind}" data-eid="${p.eid}"><span class="lab">${e.label}</span><span>${fmt(e.amount)}${bad?'<span class="bad" title="Flagged by the last check">✗</span>':''}${okP?'':`<button type="button" class="x" title="Take this posting back" onclick="removePosting('${esc(a)}',${p.i},'${phase}')">remove</button>`}</span></div>`; }).join('');
       return b+f+m;
     };
     const fb = st ? `<div class="fb ${st.ok?'ok':'no'} small">${esc(st.msg)}</div>` : '';
