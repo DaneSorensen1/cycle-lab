@@ -239,6 +239,7 @@ code.code{font-family:var(--mono);font-size:12px;background:var(--surface2);padd
       <span class="pill gray" id="whopill" title="Switch who is working" onclick="switchUser()"></span>
     </div>
   </header>
+  <div class="goal hidden" id="norecord" style="margin:0 0 10px;background:var(--red-bg);border:1px solid var(--red-border)"><b>Not signed in — your work is not being recorded</b> and cannot count for credit. <button type="button" class="lnk" onclick="switchUser()">Sign in now</button></div>
   <nav class="steps" id="steps" aria-label="Steps"></nav>
   <main id="main"></main>
   <details class="ref" id="ref">
@@ -266,7 +267,7 @@ code.code{font-family:var(--mono);font-size:12px;background:var(--surface2);padd
 
 <script>
 'use strict';
-const VERSION = '0.4.1';
+const VERSION = '0.4.2';
 const STORE_KEY = 'cycle-lab-v2';
 
 // ───────────────────────────── Accounts ─────────────────────────────
@@ -732,7 +733,7 @@ function signIn(){
   state.identity = {name, block, since: Date.now()}; state.cloud = state.cloud || {sent:[]};
   logEvent('signin', 'device', 'ok', {}); render(); save(); cloudSchedule(300);
 }
-function skipSignIn(){ state.identity = {skipped:true}; render(); save(); }
+function skipSignIn(){ if (!confirm('Skip signing in? Your work will NOT be recorded, so it cannot count for credit. You can sign in later from the banner at the top.')) return; state.identity = {skipped:true}; render(); save(); }
 function switchUser(){ state.identity = null; render(); save(); }
 
 // Every check, reveal and balance leaves one event: what was tried, how many tries it took, how much help was used.
@@ -854,6 +855,7 @@ function render(){
   const who=$('#whopill'); if (identityOK()){ who.textContent = state.identity.name+' · '+state.identity.block+' · switch'; who.classList.remove('hidden'); } else who.classList.add('hidden');
   if (!state.identity){ $('#steps').innerHTML=''; $('#main').innerHTML = signInCard(); $('#foot').textContent = `Sorensen's Cycle Lab v${VERSION} · ACC 153`; return; }
   const author = mode()==='author';
+  const nb=$('#norecord'); if (state.identity && state.identity.skipped) nb.classList.remove('hidden'); else nb.classList.add('hidden');
   $('#steps').innerHTML = STEPS.map(st=>{ const p = author?null:progress(st.id); const badge = p ? `<span class="prog ${p[0]===p[1]&&p[1]>0?'done':''}">${p[0]}/${p[1]}</span>` : '';
     return `<button type="button" class="${state.step===st.id?'active':''}" onclick="setStep('${st.id}')"><span class="n">${st.n}</span>${st.label}${badge}</button>`; }).join('')
     + `<button type="button" class="all ${state.step==='all'?'active':''}" onclick="setStep('all')">${author?'Everything on one page':'Review everything'}</button>`;

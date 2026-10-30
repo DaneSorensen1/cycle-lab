@@ -50,7 +50,7 @@ code{font-family:var(--mono);font-size:12.5px;background:var(--surface2);padding
 </div>
 <script>
 'use strict';
-const VERSION='0.4.0';
+const VERSION='0.4.2';
 const TEACHER_CODE='CYCLE-2026';
 const FIREBASE = { apiKey: "AIzaSyBnBpSSxGoxSSdPU188AhxiUmzJgvxUurc", authDomain: "journal-entry-arena.firebaseapp.com", projectId: "journal-entry-arena", storageBucket: "journal-entry-arena.firebasestorage.app", messagingSenderId: "378585775864", appId: "1:378585775864:web:57f5af35107c6bef4c850d" };
 const SDK='13.0.0';
@@ -206,6 +206,7 @@ async function boot(){
 $('#block').innerHTML='<option value="">all</option>'+['Block 1','Block 2','Block 3','Not in ACC 153'].map(b=>`<option>${b}</option>`).join('');
 $('#block').onchange=render; $('#shownLimit').onchange=render; $('#refresh').onclick=()=>boot(); $('#csv').onclick=exportCSV; $('#decode').onclick=decodeCode;
 if (demo || gateOK()) boot(); else askCode();
+setInterval(()=>{ if (!demo && gateOK() && !document.querySelector('#pc')) boot(); }, 60000);
 window.__teacher={students, demoData, renderWho, renderStuck, renderTalk, decodeCode};
 </script>
 </body>
